@@ -28,8 +28,5 @@ needed for the task; a root-started session may not have loaded nested instructi
 | Monitoring or Sentry tooling        | [telemetry/AGENTS.md](telemetry/AGENTS.md) |
 | Shared environment or shutdown      | [runtime/AGENTS.md](runtime/AGENTS.md)     |
 
-Read [code organization](docs/code-organization.md) when changing imports, shared boundaries,
-generated files, or environment ownership.
-
 For recorded errors, traces, or logs, read [telemetry/debugging.md](telemetry/debugging.md) and use
 the repository-local Sentry CLI with its read-only agent token.

@@ -7,8 +7,8 @@ Read this when building or changing interfaces. Use the existing Catalyst-style 
 
 ```tsx
 import { PlusIcon } from "@heroicons/react/16/solid";
-import { Button } from "~/components/ui-kit/button";
-import { Heading } from "~/components/ui-kit/heading";
+import { Button } from "~/web/components/ui-kit/button";
+import { Heading } from "~/web/components/ui-kit/heading";
 
 type ItemsHeaderProps = { onCreate: () => void };
 

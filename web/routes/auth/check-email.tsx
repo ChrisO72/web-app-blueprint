@@ -1,22 +1,22 @@
 import { useState, useEffect } from "react";
 import { redirect, useFetcher } from "react-router";
-import { AuthLayout } from "~/components/ui-kit/auth-layout";
-import { Button } from "~/components/ui-kit/button";
-import { FormError } from "~/components/form-error";
-import { Heading } from "~/components/ui-kit/heading";
-import { Strong, Text, TextLink } from "~/components/ui-kit/text";
+import { AuthLayout } from "~/web/components/ui-kit/auth-layout";
+import { Button } from "~/web/components/ui-kit/button";
+import { FormError } from "~/web/components/form-error";
+import { Heading } from "~/web/components/ui-kit/heading";
+import { Strong, Text, TextLink } from "~/web/components/ui-kit/text";
 import { getLatestEmailConfirmationTokenCreatedAt } from "~/db/repositories/emailConfirmationTokens";
 import { getUserByEmail } from "~/db/repositories/users";
 import {
   CONFIRMATION_TOKEN_EXPIRY_HOURS,
   createEmailConfirmationToken,
   deleteEmailConfirmationToken,
-} from "~/lib/auth/email-confirmation.server";
-import { verifyAccessToken } from "~/lib/auth/tokens.server";
-import type { ActionData } from "~/lib/form";
-import { checkAuthRateLimit, createRateLimitResponse } from "~/lib/rate-limit.server";
+} from "~/web/lib/auth/email-confirmation.server";
+import { verifyAccessToken } from "~/web/lib/auth/tokens.server";
+import type { ActionData } from "~/web/lib/form";
+import { checkAuthRateLimit, createRateLimitResponse } from "~/web/lib/rate-limit.server";
 import { isEmailConfigured } from "~/mail/client.server";
-import { readAccessTokenCookie } from "~/lib/session.server";
+import { readAccessTokenCookie } from "~/web/lib/session.server";
 import { enqueueConfirmationEmailJob } from "~/worker/jobs/send-confirmation-email";
 import type { Route } from "./+types/check-email";
 

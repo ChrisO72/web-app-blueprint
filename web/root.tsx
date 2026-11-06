@@ -9,7 +9,7 @@ import {
 } from "react-router";
 
 import { browserConfig } from "~/telemetry/config.server";
-import { env } from "~/env.server";
+import { env } from "~/web/env.server";
 
 import type { Route } from "./+types/root";
 import "./app.css";

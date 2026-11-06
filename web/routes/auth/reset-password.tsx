@@ -1,18 +1,18 @@
 import { Form, redirect, useActionData, useNavigation } from "react-router";
 import { z } from "zod";
-import { FieldError } from "~/components/field-error";
-import { FormError } from "~/components/form-error";
-import { AuthLayout } from "~/components/ui-kit/auth-layout";
-import { Button } from "~/components/ui-kit/button";
-import { Field, Label } from "~/components/ui-kit/fieldset";
-import { Heading } from "~/components/ui-kit/heading";
-import { Input } from "~/components/ui-kit/input";
-import { Strong, Text, TextLink } from "~/components/ui-kit/text";
-import { resetPassword, verifyPasswordResetToken } from "~/lib/auth/password-reset.server";
-import { parseForm, type ActionData } from "~/lib/form";
+import { FieldError } from "~/web/components/field-error";
+import { FormError } from "~/web/components/form-error";
+import { AuthLayout } from "~/web/components/ui-kit/auth-layout";
+import { Button } from "~/web/components/ui-kit/button";
+import { Field, Label } from "~/web/components/ui-kit/fieldset";
+import { Heading } from "~/web/components/ui-kit/heading";
+import { Input } from "~/web/components/ui-kit/input";
+import { Strong, Text, TextLink } from "~/web/components/ui-kit/text";
+import { resetPassword, verifyPasswordResetToken } from "~/web/lib/auth/password-reset.server";
+import { parseForm, type ActionData } from "~/web/lib/form";
 import { isEmailConfigured } from "~/mail/client.server";
-import { clearAuthCookies } from "~/lib/session.server";
-import { createRateLimitResponse } from "~/lib/rate-limit.server";
+import { clearAuthCookies } from "~/web/lib/session.server";
+import { createRateLimitResponse } from "~/web/lib/rate-limit.server";
 import type { Route } from "./+types/reset-password";
 
 const resetPasswordSchema = z

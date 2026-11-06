@@ -2,16 +2,16 @@ import { captureException } from "@sentry/react-router";
 import { ArrowUpTrayIcon } from "@heroicons/react/24/outline";
 import { type FormEvent, useEffect, useRef, useState } from "react";
 import { useFetcher, useRevalidator } from "react-router";
-import { FormError } from "~/components/form-error";
-import { Button } from "~/components/ui-kit/button";
+import { FormError } from "~/web/components/form-error";
+import { Button } from "~/web/components/ui-kit/button";
 import {
   Dialog,
   DialogActions,
   DialogBody,
   DialogDescription,
   DialogTitle,
-} from "~/components/ui-kit/dialog";
-import { Description, ErrorMessage, Field, Label } from "~/components/ui-kit/fieldset";
+} from "~/web/components/ui-kit/dialog";
+import { Description, ErrorMessage, Field, Label } from "~/web/components/ui-kit/fieldset";
 import type { FileActionData } from "./index";
 
 const MAX_UPLOAD_BYTES = 25 * 1024 * 1024;

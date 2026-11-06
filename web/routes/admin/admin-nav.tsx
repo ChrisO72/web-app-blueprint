@@ -1,5 +1,5 @@
 import { useLocation } from "react-router";
-import { Navbar, NavbarItem, NavbarSection } from "~/components/ui-kit/navbar";
+import { Navbar, NavbarItem, NavbarSection } from "~/web/components/ui-kit/navbar";
 
 const tabs = [
   { name: "Settings", href: "/admin" },

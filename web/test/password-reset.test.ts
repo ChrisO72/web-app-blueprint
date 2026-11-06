@@ -3,16 +3,16 @@ import {
   consumePasswordResetToken,
   findPasswordResetToken,
 } from "~/db/repositories/passwordResetTokens";
-import { hashPassword } from "~/lib/auth/password.server";
-import { resetPassword } from "~/lib/auth/password-reset.server";
-import { checkAuthRateLimit } from "~/lib/rate-limit.server";
+import { hashPassword } from "~/web/lib/auth/password.server";
+import { resetPassword } from "~/web/lib/auth/password-reset.server";
+import { checkAuthRateLimit } from "~/web/lib/rate-limit.server";
 
 vi.mock("~/db/repositories/passwordResetTokens", () => ({
   findPasswordResetToken: vi.fn(),
   consumePasswordResetToken: vi.fn(),
 }));
-vi.mock("~/lib/auth/password.server", () => ({ hashPassword: vi.fn() }));
-vi.mock("~/lib/rate-limit.server", () => ({ checkAuthRateLimit: vi.fn() }));
+vi.mock("~/web/lib/auth/password.server", () => ({ hashPassword: vi.fn() }));
+vi.mock("~/web/lib/rate-limit.server", () => ({ checkAuthRateLimit: vi.fn() }));
 
 beforeEach(() => vi.resetAllMocks());
 

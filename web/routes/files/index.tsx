@@ -2,10 +2,15 @@ import { EllipsisHorizontalIcon } from "@heroicons/react/16/solid";
 import { useState } from "react";
 import { redirect, useActionData, useSubmit } from "react-router";
 import { z } from "zod";
-import { FormError } from "~/components/form-error";
-import { Badge } from "~/components/ui-kit/badge";
-import { Dropdown, DropdownButton, DropdownItem, DropdownMenu } from "~/components/ui-kit/dropdown";
-import { Heading } from "~/components/ui-kit/heading";
+import { FormError } from "~/web/components/form-error";
+import { Badge } from "~/web/components/ui-kit/badge";
+import {
+  Dropdown,
+  DropdownButton,
+  DropdownItem,
+  DropdownMenu,
+} from "~/web/components/ui-kit/dropdown";
+import { Heading } from "~/web/components/ui-kit/heading";
 import {
   Table,
   TableBody,
@@ -13,7 +18,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "~/components/ui-kit/table";
+} from "~/web/components/ui-kit/table";
 import {
   countFilesByOrg,
   createFile,
@@ -23,8 +28,8 @@ import {
   markFileReady,
   softDeleteFile,
 } from "~/db/repositories/files";
-import { type ActionData, parseForm } from "~/lib/form";
-import { getAuthenticatedUser } from "~/lib/session.server";
+import { type ActionData, parseForm } from "~/web/lib/form";
+import { getAuthenticatedUser } from "~/web/lib/session.server";
 import {
   createFileUpload,
   createStorageKey,

@@ -6,7 +6,7 @@ import {
   hashRefreshToken,
   refreshAccessToken,
   REFRESH_TOKEN_MAX_AGE,
-} from "~/lib/auth/tokens.server";
+} from "~/web/lib/auth/tokens.server";
 
 vi.mock("~/db/repositories/refreshTokens", () => ({
   insertRefreshToken: vi.fn(),

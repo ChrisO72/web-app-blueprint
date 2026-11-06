@@ -4,7 +4,7 @@ import {
   createRateLimitResponse,
   type AuthRateLimitPolicies,
   type RateLimitStore,
-} from "~/lib/rate-limit.server";
+} from "~/web/lib/rate-limit.server";
 
 const KEY_SECRET = "test-rate-limit-key-secret-with-at-least-32-characters";
 

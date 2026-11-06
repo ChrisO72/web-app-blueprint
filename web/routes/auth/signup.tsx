@@ -1,26 +1,26 @@
 import { Form, redirect, useActionData, useNavigation } from "react-router";
 import { z } from "zod";
-import { AuthLayout } from "~/components/ui-kit/auth-layout";
-import { Button } from "~/components/ui-kit/button";
-import { FieldError } from "~/components/field-error";
-import { FormError } from "~/components/form-error";
-import { Field, Label } from "~/components/ui-kit/fieldset";
-import { Heading } from "~/components/ui-kit/heading";
-import { Input } from "~/components/ui-kit/input";
-import { Strong, Text, TextLink } from "~/components/ui-kit/text";
+import { AuthLayout } from "~/web/components/ui-kit/auth-layout";
+import { Button } from "~/web/components/ui-kit/button";
+import { FieldError } from "~/web/components/field-error";
+import { FormError } from "~/web/components/form-error";
+import { Field, Label } from "~/web/components/ui-kit/fieldset";
+import { Heading } from "~/web/components/ui-kit/heading";
+import { Input } from "~/web/components/ui-kit/input";
+import { Strong, Text, TextLink } from "~/web/components/ui-kit/text";
 import { getSiteSettings } from "~/db/repositories/settings";
 import { getUserByEmail } from "~/db/repositories/users";
 import {
   CONFIRMATION_TOKEN_EXPIRY_HOURS,
   createEmailConfirmationToken,
   deleteEmailConfirmationToken,
-} from "~/lib/auth/email-confirmation.server";
-import { createUserWithPassword } from "~/lib/auth/registration.server";
-import { createTokens, verifyAccessToken } from "~/lib/auth/tokens.server";
-import { parseForm, type ActionData } from "~/lib/form";
-import { checkAuthRateLimit, createRateLimitResponse } from "~/lib/rate-limit.server";
+} from "~/web/lib/auth/email-confirmation.server";
+import { createUserWithPassword } from "~/web/lib/auth/registration.server";
+import { createTokens, verifyAccessToken } from "~/web/lib/auth/tokens.server";
+import { parseForm, type ActionData } from "~/web/lib/form";
+import { checkAuthRateLimit, createRateLimitResponse } from "~/web/lib/rate-limit.server";
 import { isEmailConfigured } from "~/mail/client.server";
-import { readAccessTokenCookie, setAuthCookies } from "~/lib/session.server";
+import { readAccessTokenCookie, setAuthCookies } from "~/web/lib/session.server";
 import { enqueueConfirmationEmailJob } from "~/worker/jobs/send-confirmation-email";
 import type { Route } from "./+types/signup";
 

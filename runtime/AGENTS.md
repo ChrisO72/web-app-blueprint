@@ -7,6 +7,6 @@ This area owns shared environment loading and process/resource shutdown.
 - Preserve shared state across preloaded and bundled code and the bounded process shutdown deadline.
 
 For environment changes, read [env.server.ts](env.server.ts), [config.ts](config.ts), and
-[configuration ownership](../docs/code-organization.md#configuration-ownership).
+[configuration ownership](README.md#configuration-ownership).
 For shutdown changes, read [lifecycle.server.ts](lifecycle.server.ts), [process.server.ts](process.server.ts),
 and [telemetry/instrumentation.md](../telemetry/instrumentation.md#shutdown).

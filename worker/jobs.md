@@ -73,7 +73,7 @@ Import each registration function in `schedules/register.ts` and call it from `s
 ### Enqueue from App
 
 ```typescript
-import { CONFIRMATION_TOKEN_EXPIRY_HOURS } from "~/lib/auth/email-confirmation.server";
+import { CONFIRMATION_TOKEN_EXPIRY_HOURS } from "~/web/lib/auth/email-confirmation.server";
 import { enqueueConfirmationEmailJob } from "~/worker/jobs/send-confirmation-email";
 
 // In a route action or loader

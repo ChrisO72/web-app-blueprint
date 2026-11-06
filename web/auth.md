@@ -19,7 +19,7 @@ For admin-only routes, use `requireAdmin(context)`; non-admins redirect to `/`:
 
 ```ts
 import type { Route } from "./+types/index";
-import { requireAdmin } from "~/lib/session.server";
+import { requireAdmin } from "~/web/lib/session.server";
 
 export async function loader({ context }: Route.LoaderArgs) {
   const { user } = requireAdmin(context);
