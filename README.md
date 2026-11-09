@@ -101,6 +101,6 @@ Checks run locally. Component targets scope formatting, linting, and tests; type
 
 ## Development guides
 
-- [Agent development workflow](docs/agent-workflow.md) — issue planning, reviews, implementation, functional verification, and documentation sync.
+- [Agent development skills](.agents/skills/README.md) — skills, descriptions, and example prompts.
 - Component READMEs link to task-specific guides and production commands.
 - [Agent instructions](AGENTS.md) — repository rules and routing to scoped instructions.

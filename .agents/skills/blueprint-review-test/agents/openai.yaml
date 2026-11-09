@@ -1,0 +1,3 @@
+interface:
+  display_name: "Review & Test"
+  short_description: "Review changes and run the configured project checks."

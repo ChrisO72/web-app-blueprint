@@ -7,8 +7,7 @@ needed for the task; a root-started session may not have loaded nested instructi
 ## Universal rules
 
 - Run `npm run check` before finishing changes. It is the standard verification gate.
-- Use `$blueprint-functional-review` for requested browser or CLI verification of running behavior.
-  Use a local or designated test environment and protect existing data and external integrations.
+- Use `$blueprint-review-test` for requested reviews and configured project checks.
 - Do not silence the type checker: no `any`, `@ts-ignore`, or unjustified `eslint-disable`.
 - Keep credentials out of code, documentation, and logs.
 - Keep unit tests in the owning component's `test/` directory. Read that component's instructions
