@@ -1,12 +1,12 @@
 envVarGroups:
-  - name: fullstack-blueprint-node
+  - name: web-app-blueprint-node
     envVars:
       - key: NODE_VERSION
         value: "24.14.1"
 
 services:
   - type: keyvalue
-    name: fullstack-blueprint-queue
+    name: web-app-blueprint-queue
     plan: starter
     region: frankfurt
     ipAllowList: []
@@ -14,7 +14,39 @@ services:
     persistenceMode: journal-snapshot
 
   - type: web
-    name: fullstack-blueprint-web
+    name: web-app-blueprint-storage
+    runtime: image
+    plan: starter
+    region: frankfurt
+    image:
+      url: docker.io/chrislusf/seaweedfs:4.50
+    dockerCommand: >-
+      mini -dir=/data -s3.port=8333
+      -webdav=false -admin.ui=false
+      -s3.port.iceberg=0 -s3.port.lance=0
+    disk:
+      name: objectdata
+      mountPath: /data
+      sizeGB: 10
+    envVars:
+      - key: PORT
+        value: "8333"
+      - key: AWS_ACCESS_KEY_ID
+        generateValue: true
+      - key: AWS_SECRET_ACCESS_KEY
+        generateValue: true
+      - key: AWS_DEFAULT_REGION
+        value: eu-central-1
+      - key: S3_BUCKET
+        value: blueprint-files
+      - key: WEED_S3_ALLOWEDORIGINS
+        fromService:
+          type: web
+          name: web-app-blueprint-web
+          envVarKey: RENDER_EXTERNAL_URL
+
+  - type: web
+    name: web-app-blueprint-web
     runtime: node
     plan: starter
     region: frankfurt
@@ -22,7 +54,7 @@ services:
     preDeployCommand: npm run db:migrate
     startCommand: npm run start:web
     envVars:
-      - fromGroup: fullstack-blueprint-node
+      - fromGroup: web-app-blueprint-node
       - key: JWT_SECRET
         generateValue: true
       - key: REFRESH_SECRET
@@ -31,21 +63,53 @@ services:
         generateValue: true
       - key: DATABASE_URL
         fromDatabase:
-          name: fullstack-blueprint-db
+          name: web-app-blueprint-db
           property: connectionString
       - key: REDIS_URL
         fromService:
           type: keyvalue
-          name: fullstack-blueprint-queue
+          name: web-app-blueprint-queue
           property: connectionString
       - key: APP_URL
         fromService:
           type: web
-          name: fullstack-blueprint-web
+          name: web-app-blueprint-web
           envVarKey: RENDER_EXTERNAL_URL
+      - key: S3_REGION
+        fromService:
+          type: web
+          name: web-app-blueprint-storage
+          envVarKey: AWS_DEFAULT_REGION
+      - key: S3_BUCKET
+        fromService:
+          type: web
+          name: web-app-blueprint-storage
+          envVarKey: S3_BUCKET
+      - key: S3_ENDPOINT
+        fromService:
+          type: web
+          name: web-app-blueprint-storage
+          envVarKey: RENDER_EXTERNAL_URL
+      - key: S3_PUBLIC_ENDPOINT
+        fromService:
+          type: web
+          name: web-app-blueprint-storage
+          envVarKey: RENDER_EXTERNAL_URL
+      - key: S3_FORCE_PATH_STYLE
+        value: "true"
+      - key: S3_ACCESS_KEY_ID
+        fromService:
+          type: web
+          name: web-app-blueprint-storage
+          envVarKey: AWS_ACCESS_KEY_ID
+      - key: S3_SECRET_ACCESS_KEY
+        fromService:
+          type: web
+          name: web-app-blueprint-storage
+          envVarKey: AWS_SECRET_ACCESS_KEY
 
   - type: worker
-    name: fullstack-blueprint-worker
+    name: web-app-blueprint-worker
     runtime: node
     plan: starter
     region: frankfurt
@@ -53,23 +117,55 @@ services:
     startCommand: npm run start:worker
     maxShutdownDelaySeconds: 120
     envVars:
-      - fromGroup: fullstack-blueprint-node
+      - fromGroup: web-app-blueprint-node
       - key: DATABASE_URL
         fromDatabase:
-          name: fullstack-blueprint-db
+          name: web-app-blueprint-db
           property: connectionString
       - key: REDIS_URL
         fromService:
           type: keyvalue
-          name: fullstack-blueprint-queue
+          name: web-app-blueprint-queue
           property: connectionString
       - key: APP_URL
         fromService:
           type: web
-          name: fullstack-blueprint-web
+          name: web-app-blueprint-web
           envVarKey: RENDER_EXTERNAL_URL
+      - key: S3_REGION
+        fromService:
+          type: web
+          name: web-app-blueprint-storage
+          envVarKey: AWS_DEFAULT_REGION
+      - key: S3_BUCKET
+        fromService:
+          type: web
+          name: web-app-blueprint-storage
+          envVarKey: S3_BUCKET
+      - key: S3_ENDPOINT
+        fromService:
+          type: web
+          name: web-app-blueprint-storage
+          envVarKey: RENDER_EXTERNAL_URL
+      - key: S3_PUBLIC_ENDPOINT
+        fromService:
+          type: web
+          name: web-app-blueprint-storage
+          envVarKey: RENDER_EXTERNAL_URL
+      - key: S3_FORCE_PATH_STYLE
+        value: "true"
+      - key: S3_ACCESS_KEY_ID
+        fromService:
+          type: web
+          name: web-app-blueprint-storage
+          envVarKey: AWS_ACCESS_KEY_ID
+      - key: S3_SECRET_ACCESS_KEY
+        fromService:
+          type: web
+          name: web-app-blueprint-storage
+          envVarKey: AWS_SECRET_ACCESS_KEY
 
 databases:
-  - name: fullstack-blueprint-db
+  - name: web-app-blueprint-db
     plan: basic-256mb
     region: frankfurt

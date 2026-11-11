@@ -47,6 +47,27 @@ along with PostgreSQL and Redis data; separate Sentry data is preserved.
 
 ## Production
 
+### Render
+
+The root [Render Blueprint](../../render.yaml) includes `web-app-blueprint-storage`, using the
+same pinned SeaweedFS image and `mini` mode as local development. It creates the private
+`blueprint-files` bucket, generates credentials, and supplies all S3 settings to web and worker.
+The 10 GB persistent disk at `/data` stores both objects and metadata across deploys; increase
+`disk.sizeGB` in the Blueprint as storage grows.
+
+Storage runs as a public web service so browsers can reach its S3 API over Render's HTTPS URL.
+Both server operations and signed browser URLs use that endpoint with path-style addressing.
+Only the S3 port is published; WebDAV, the admin UI, Iceberg, and Lance are disabled. Anonymous
+object access is not configured.
+
+`WEED_S3_ALLOWEDORIGINS` configures SeaweedFS's `s3.allowedOrigins` flag from the web service's
+`RENDER_EXTERNAL_URL`. If you use a custom application domain, set this storage environment
+variable and the app services' `APP_URL` to that exact origin, then redeploy the affected services.
+Keep the storage endpoint variables pointed at the final browser-reachable URL when using a
+custom storage domain.
+
+### AWS S3
+
 Create a private S3 bucket and supply these settings to web and worker:
 
 ```dotenv
