@@ -45,13 +45,13 @@ export default defineConfig([
         {
           patterns: [
             {
-              regex: "^~(?:$|/(?!(?:web|db|mail|storage|worker|telemetry|runtime)/))",
+              regex: "^~(?:$|/(?!(?:web|db|integrations|worker|telemetry|runtime)/))",
               message: "Use an explicit component alias such as ~/web/* or ~/db/*.",
             },
             {
               regex: "^\\.\\./\\.\\./",
               message:
-                "Use the ~/web/* (web), ~/db/* (db), ~/mail/* (mail), ~/telemetry/* (telemetry), ~/runtime/* (runtime), ~/storage/* (storage), ~/worker/* (worker) aliases instead of ../../ deep relative imports.",
+                "Use the ~/web/* (web), ~/db/* (db), ~/integrations/* (integrations), ~/telemetry/* (telemetry), ~/runtime/* (runtime), ~/worker/* (worker) aliases instead of ../../ deep relative imports.",
             },
           ],
         },

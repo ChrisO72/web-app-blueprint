@@ -35,8 +35,8 @@ Server-only code lives in `*.server.ts` and is never imported from client compon
 
 - [lib/session.server.ts](lib/session.server.ts) — auth cookies, protected-route context, and authorization helpers.
 - `lib/auth/` — password validation, registration, session tokens, and email-confirmation tokens in focused server modules.
-- [`../mail/`](../mail/) — shared outbound mail transport and one server module per email type, delivered through worker jobs.
-- [`../storage/`](../storage/) — shared S3 client and object operations used by web and worker code.
+- [`../integrations/mail/`](../integrations/mail/) — shared outbound mail transport and one server module per email type, delivered through worker jobs.
+- [`../integrations/storage/`](../integrations/storage/) — shared S3 client and object operations used by web and worker code.
 
 ## Rate limiting
 
@@ -50,4 +50,4 @@ Public auth actions use Redis-backed fixed windows shared by every web instance:
 Counters use HMAC-pseudonymized account identifiers, expire with their window, return `429` with `Retry-After` when exceeded, and fail open if Redis is unavailable.
 
 Use the [route template](routes.md#route-module-template) for loaders and actions. Read the
-[mail setup](../mail/README.md) when enabling account confirmation or password resets.
+[mail setup](../integrations/mail/README.md) when enabling account confirmation or password resets.

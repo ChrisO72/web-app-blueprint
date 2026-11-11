@@ -18,11 +18,11 @@ confirmation and password-reset email. Use the production public origin for depl
 
 ## Run locally
 
-Run the [whole app](../README.md#run-the-whole-app), or follow the individual
-[web](../web/README.md#run-locally) and [worker](../worker/README.md#run-locally) instructions.
+Run the [whole app](../../README.md#run-the-whole-app), or follow the individual
+[web](../../web/README.md#run-locally) and [worker](../../worker/README.md#run-locally) instructions.
 Web enqueues emails; a running worker performs delivery. Restart the processes after changing configuration.
 
 ## Development guides
 
 - [Templates and delivery](templates.md) — adding email types and connecting delivery jobs.
-- [Instrumentation](../telemetry/instrumentation.md) — safe logging and error ownership.
+- [Instrumentation](../../telemetry/instrumentation.md) — safe logging and error ownership.

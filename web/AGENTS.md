@@ -11,6 +11,6 @@ Read only the guides relevant to the change:
 - [routes.md](routes.md) for routes, loaders/actions, forms, and validation.
 - [auth.md](auth.md) for sessions, permissions, protected routes, and auth rate limits.
 - [ui.md](ui.md) for components and styling.
-- [storage/uploads.md](../storage/uploads.md) for private-file routes.
+- [integrations/storage/uploads.md](../integrations/storage/uploads.md) for private-file routes.
 - [db/repositories/repository.md](../db/repositories/repository.md) for data access.
 - [telemetry/instrumentation.md](../telemetry/instrumentation.md) for logging, tracing, and lifecycle changes.

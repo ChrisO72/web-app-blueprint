@@ -10,7 +10,7 @@ import { Input } from "~/web/components/ui-kit/input";
 import { Strong, Text, TextLink } from "~/web/components/ui-kit/text";
 import { resetPassword, verifyPasswordResetToken } from "~/web/lib/auth/password-reset.server";
 import { parseForm, type ActionData } from "~/web/lib/form";
-import { isEmailConfigured } from "~/mail/client.server";
+import { isEmailConfigured } from "~/integrations/mail/client.server";
 import { clearAuthCookies } from "~/web/lib/session.server";
 import { createRateLimitResponse } from "~/web/lib/rate-limit.server";
 import type { Route } from "./+types/reset-password";

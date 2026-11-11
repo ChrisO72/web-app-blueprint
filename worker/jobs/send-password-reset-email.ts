@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import { sendPasswordResetEmail } from "~/mail/password-reset.server";
+import { sendPasswordResetEmail } from "~/integrations/mail/password-reset.server";
 import { enqueueJob } from "../enqueue";
 
 export const sendPasswordResetEmailJobName = "sendPasswordResetEmail" as const;

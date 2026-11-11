@@ -15,7 +15,7 @@ import {
 import { verifyAccessToken } from "~/web/lib/auth/tokens.server";
 import type { ActionData } from "~/web/lib/form";
 import { checkAuthRateLimit, createRateLimitResponse } from "~/web/lib/rate-limit.server";
-import { isEmailConfigured } from "~/mail/client.server";
+import { isEmailConfigured } from "~/integrations/mail/client.server";
 import { readAccessTokenCookie } from "~/web/lib/session.server";
 import { enqueueConfirmationEmailJob } from "~/worker/jobs/send-confirmation-email";
 import type { Route } from "./+types/check-email";

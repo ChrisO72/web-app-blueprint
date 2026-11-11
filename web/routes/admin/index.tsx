@@ -12,7 +12,7 @@ import { Switch, SwitchField } from "~/web/components/ui-kit/switch";
 import { Badge } from "~/web/components/ui-kit/badge";
 import { XMarkIcon } from "@heroicons/react/16/solid";
 import type { ActionData, FieldErrors } from "~/web/lib/form";
-import { isEmailConfigured } from "~/mail/client.server";
+import { isEmailConfigured } from "~/integrations/mail/client.server";
 
 const settingsSchema = z.object({
   allowedDomains: z.array(z.string().trim().min(1)).default([]),

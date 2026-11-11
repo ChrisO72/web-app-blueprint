@@ -2,7 +2,7 @@ import { redirect } from "react-router";
 import { z } from "zod";
 import { getFileById } from "~/db/repositories/files";
 import { getAuthenticatedUser } from "~/web/lib/session.server";
-import { createFilePreviewUrl, isFileStorageEnabled } from "~/storage/objects.server";
+import { createFilePreviewUrl, isFileStorageEnabled } from "~/integrations/storage/objects.server";
 import type { Route } from "./+types/preview";
 
 const paramsSchema = z.object({

@@ -19,7 +19,7 @@ import { createUserWithPassword } from "~/web/lib/auth/registration.server";
 import { createTokens, verifyAccessToken } from "~/web/lib/auth/tokens.server";
 import { parseForm, type ActionData } from "~/web/lib/form";
 import { checkAuthRateLimit, createRateLimitResponse } from "~/web/lib/rate-limit.server";
-import { isEmailConfigured } from "~/mail/client.server";
+import { isEmailConfigured } from "~/integrations/mail/client.server";
 import { readAccessTokenCookie, setAuthCookies } from "~/web/lib/session.server";
 import { enqueueConfirmationEmailJob } from "~/worker/jobs/send-confirmation-email";
 import type { Route } from "./+types/signup";

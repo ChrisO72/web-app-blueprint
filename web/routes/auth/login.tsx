@@ -12,7 +12,7 @@ import { getSiteSettings } from "~/db/repositories/settings";
 import { validateLogin } from "~/web/lib/auth/password.server";
 import { createTokens, verifyAccessToken } from "~/web/lib/auth/tokens.server";
 import { parseForm, type ActionData } from "~/web/lib/form";
-import { isEmailConfigured } from "~/mail/client.server";
+import { isEmailConfigured } from "~/integrations/mail/client.server";
 import { checkAuthRateLimit, createRateLimitResponse } from "~/web/lib/rate-limit.server";
 import { readAccessTokenCookie, setAuthCookies } from "~/web/lib/session.server";
 import type { Route } from "./+types/login";

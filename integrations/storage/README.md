@@ -36,7 +36,7 @@ docker compose up -d --wait storage # Start SeaweedFS and wait for its private b
 docker compose stop storage        # Retain stored files
 ```
 
-The [whole-app workflow](../README.md#run-the-whole-app) starts storage automatically. Web and
+The [whole-app workflow](../../README.md#run-the-whole-app) starts storage automatically. Web and
 worker wait for a successful SigV4-authenticated HEAD request to the configured bucket; a missing
 bucket or rejected credentials prevents startup.
 
@@ -79,4 +79,4 @@ Compose passes `APP_URL` to SeaweedFS's `s3.allowedOrigins` setting for local br
 ## Development guides
 
 - [Uploads and downloads](uploads.md) — validation, authorization, signed URLs, and delivery.
-- [Repositories](../db/repositories/repository.md) — organization-scoped file metadata access.
+- [Repositories](../../db/repositories/repository.md) — organization-scoped file metadata access.

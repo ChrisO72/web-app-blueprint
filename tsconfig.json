@@ -11,8 +11,7 @@
     "paths": {
       "~/web/*": ["./web/*"],
       "~/db/*": ["./db/*"],
-      "~/mail/*": ["./mail/*"],
-      "~/storage/*": ["./storage/*"],
+      "~/integrations/*": ["./integrations/*"],
       "~/worker/*": ["./worker/*"],
       "~/telemetry/*": ["./telemetry/*"],
       "~/runtime/*": ["./runtime/*"]

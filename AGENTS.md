@@ -17,15 +17,15 @@ needed for the task; a root-started session may not have loaded nested instructi
 
 ## Read when relevant
 
-| Work                                | Instructions                               |
-| ----------------------------------- | ------------------------------------------ |
-| Web routes, auth, or UI             | [web/AGENTS.md](web/AGENTS.md)             |
-| Jobs or schedules                   | [worker/AGENTS.md](worker/AGENTS.md)       |
-| Schema, migrations, or repositories | [db/AGENTS.md](db/AGENTS.md)               |
-| Email                               | [mail/AGENTS.md](mail/AGENTS.md)           |
-| File storage                        | [storage/AGENTS.md](storage/AGENTS.md)     |
-| Monitoring or Sentry tooling        | [telemetry/AGENTS.md](telemetry/AGENTS.md) |
-| Shared environment or shutdown      | [runtime/AGENTS.md](runtime/AGENTS.md)     |
+| Work                                | Instructions                                                     |
+| ----------------------------------- | ---------------------------------------------------------------- |
+| Web routes, auth, or UI             | [web/AGENTS.md](web/AGENTS.md)                                   |
+| Jobs or schedules                   | [worker/AGENTS.md](worker/AGENTS.md)                             |
+| Schema, migrations, or repositories | [db/AGENTS.md](db/AGENTS.md)                                     |
+| Email                               | [integrations/mail/AGENTS.md](integrations/mail/AGENTS.md)       |
+| File storage                        | [integrations/storage/AGENTS.md](integrations/storage/AGENTS.md) |
+| Monitoring or Sentry tooling        | [telemetry/AGENTS.md](telemetry/AGENTS.md)                       |
+| Shared environment or shutdown      | [runtime/AGENTS.md](runtime/AGENTS.md)                           |
 
 For recorded errors, traces, or logs, read [telemetry/debugging.md](telemetry/debugging.md) and use
 the repository-local Sentry CLI with its read-only agent token.

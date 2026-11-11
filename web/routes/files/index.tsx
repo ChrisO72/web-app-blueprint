@@ -37,7 +37,7 @@ import {
   inspectStoredFile,
   isFileStorageEnabled,
   MAX_UPLOAD_BYTES,
-} from "~/storage/objects.server";
+} from "~/integrations/storage/objects.server";
 import { log } from "~/telemetry/log.server";
 import { enqueueJob } from "~/worker/enqueue";
 import {

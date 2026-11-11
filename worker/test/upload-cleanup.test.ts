@@ -1,10 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { getFileForCleanup, markFileFailed } from "~/db/repositories/files";
-import { deleteStoredFile } from "~/storage/objects.server";
+import { deleteStoredFile } from "~/integrations/storage/objects.server";
 import { handleExpirePendingFileUploadJob } from "../jobs/expire-pending-file-upload";
 
 vi.mock("~/db/repositories/files", () => ({ markFileFailed: vi.fn(), getFileForCleanup: vi.fn() }));
-vi.mock("~/storage/objects.server", () => ({ deleteStoredFile: vi.fn() }));
+vi.mock("~/integrations/storage/objects.server", () => ({ deleteStoredFile: vi.fn() }));
 vi.mock("~/telemetry/log.server", () => ({ log: { info: vi.fn() } }));
 
 beforeEach(() => {
