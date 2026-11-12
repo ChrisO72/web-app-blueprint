@@ -109,7 +109,7 @@ services:
         fromService:
           type: web
           name: web-app-blueprint-storage
-          envVarKey: AWS_ACCESS_KEY_ID
+          envVarKey: RENDER_SERVICE_ID
       - key: S3_SECRET_ACCESS_KEY
         fromService:
           type: web
@@ -167,7 +167,7 @@ services:
         fromService:
           type: web
           name: web-app-blueprint-storage
-          envVarKey: AWS_ACCESS_KEY_ID
+          envVarKey: RENDER_SERVICE_ID
       - key: S3_SECRET_ACCESS_KEY
         fromService:
           type: web
