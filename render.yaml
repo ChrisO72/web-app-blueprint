@@ -32,7 +32,11 @@ services:
       - key: PORT
         value: "8333"
       - key: AWS_ACCESS_KEY_ID
-        generateValue: true
+        # Don't use generateValue here: it can contain a "/", which is used as a separator.
+        fromService:
+          type: web
+          name: web-app-blueprint-storage
+          envVarKey: RENDER_SERVICE_ID
       - key: AWS_SECRET_ACCESS_KEY
         generateValue: true
       - key: AWS_DEFAULT_REGION
