@@ -3,6 +3,19 @@ envVarGroups:
     envVars:
       - key: NODE_VERSION
         value: "24.14.1"
+  - name: web-app-blueprint-shared
+    envVars:
+      # Optional integrations stay disabled until configured in the Render Dashboard.
+      # Omit values so later Blueprint syncs preserve dashboard-managed settings.
+      - key: LETTERMINT_API_KEY
+      - key: LETTERMINT_MAIL_FROM
+      - key: SENTRY_DSN
+      - key: SENTRY_PUBLIC_DSN
+      - key: SENTRY_ENVIRONMENT
+      - key: SENTRY_RELEASE
+      - key: SENTRY_TRACES_SAMPLE_RATE
+      - key: SENTRY_REPLAYS_SESSION_SAMPLE_RATE
+      - key: SENTRY_REPLAYS_ON_ERROR_SAMPLE_RATE
 
 services:
   - type: keyvalue
@@ -59,6 +72,7 @@ services:
     startCommand: npm run start:web
     envVars:
       - fromGroup: web-app-blueprint-node
+      - fromGroup: web-app-blueprint-shared
       - key: JWT_SECRET
         generateValue: true
       - key: REFRESH_SECRET
@@ -122,6 +136,7 @@ services:
     maxShutdownDelaySeconds: 120
     envVars:
       - fromGroup: web-app-blueprint-node
+      - fromGroup: web-app-blueprint-shared
       - key: DATABASE_URL
         fromDatabase:
           name: web-app-blueprint-db
