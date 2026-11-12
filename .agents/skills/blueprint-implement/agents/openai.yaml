@@ -1,3 +1,0 @@
-interface:
-  display_name: "Blueprint Implement"
-  short_description: "Implement in Worktrunk worktrees, check, and open PRs"

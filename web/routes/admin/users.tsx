@@ -1,8 +1,8 @@
 import type { Route } from "./+types/users";
 import { listUsers, softDeleteUser, updateUser } from "~/db/repositories/users";
 import { getOrganizationById, listOrganizations } from "~/db/repositories/organizations";
-import { requireAdmin } from "~/lib/session.server";
-import { Heading } from "~/components/ui-kit/heading";
+import { requireAdmin } from "~/web/lib/session.server";
+import { Heading } from "~/web/components/ui-kit/heading";
 import {
   Table,
   TableBody,
@@ -10,14 +10,19 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "~/components/ui-kit/table";
+} from "~/web/components/ui-kit/table";
 import { redirect, useFetcher, useSubmit } from "react-router";
-import { Dropdown, DropdownButton, DropdownItem, DropdownMenu } from "~/components/ui-kit/dropdown";
+import {
+  Dropdown,
+  DropdownButton,
+  DropdownItem,
+  DropdownMenu,
+} from "~/web/components/ui-kit/dropdown";
 import { EllipsisHorizontalIcon } from "@heroicons/react/16/solid";
 import { z } from "zod";
-import { Select } from "~/components/ui-kit/select";
-import { parseForm } from "~/lib/form";
-import { Combobox, ComboboxLabel, ComboboxOption } from "~/components/ui-kit/combobox";
+import { Select } from "~/web/components/ui-kit/select";
+import { parseForm } from "~/web/lib/form";
+import { Combobox, ComboboxLabel, ComboboxOption } from "~/web/components/ui-kit/combobox";
 
 const ROLES = ["admin", "user", "viewer"] as const;
 

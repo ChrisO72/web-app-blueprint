@@ -13,7 +13,7 @@ when every producer should share options such as retries and retention.
 ```typescript
 // jobs/send-confirmation-email.ts
 import { createHash } from "node:crypto";
-import { sendConfirmationEmail } from "~/mail/confirmation.server";
+import { sendConfirmationEmail } from "~/integrations/mail/confirmation.server";
 import { enqueueJob } from "../enqueue";
 
 export const sendConfirmationEmailJobName = "sendConfirmationEmail" as const;
@@ -73,7 +73,7 @@ Import each registration function in `schedules/register.ts` and call it from `s
 ### Enqueue from App
 
 ```typescript
-import { CONFIRMATION_TOKEN_EXPIRY_HOURS } from "~/lib/auth/email-confirmation.server";
+import { CONFIRMATION_TOKEN_EXPIRY_HOURS } from "~/web/lib/auth/email-confirmation.server";
 import { enqueueConfirmationEmailJob } from "~/worker/jobs/send-confirmation-email";
 
 // In a route action or loader
@@ -89,12 +89,12 @@ await enqueueConfirmationEmailJob({
 - Keep each job's payload type in its job file
 - Register every job in `jobs/dispatcher.ts`
 - Enqueue through `enqueueJob`; do not call the queue directly
-- Put outbound email transport and per-email templates in `mail/`; worker handlers perform delivery
+- Put outbound email transport and per-email templates in `integrations/mail/`; worker handlers perform delivery
 - Keep handlers and schedule callbacks focused and minimal
 - Use cron expressions: `* * * * *` (min hour day month weekday)
 - Configure `attempts` and `backoff` when a job should retry; BullMQ jobs run once by default
 
 Use a digest when a stable job ID is derived from a secret; never put the raw token in the ID.
-Read [mail/templates.md](../mail/templates.md) for email jobs and [storage/uploads.md](../storage/uploads.md)
+Read [integrations/mail/templates.md](../integrations/mail/templates.md) for email jobs and [integrations/storage/uploads.md](../integrations/storage/uploads.md)
 for file jobs. Queue tracing, error capture, and shutdown belong to the
 [instrumentation guide](../telemetry/instrumentation.md).

@@ -1,7 +1,7 @@
 import { registerCleanup } from "~/runtime/lifecycle.server";
 import { createHmac } from "node:crypto";
 import Redis from "ioredis";
-import { env } from "~/env.server";
+import { env } from "~/web/env.server";
 import { log } from "~/telemetry/log.server";
 
 export type AuthRateLimitAction =

@@ -32,19 +32,21 @@ export default defineConfig((configEnv) => ({
   resolve: {
     alias: [
       { find: "~/db", replacement: fileURLToPath(new URL("./db", import.meta.url)) },
-      { find: "~/mail", replacement: fileURLToPath(new URL("./mail", import.meta.url)) },
+      {
+        find: "~/integrations",
+        replacement: fileURLToPath(new URL("./integrations", import.meta.url)),
+      },
       {
         find: "~/telemetry",
         replacement: fileURLToPath(new URL("./telemetry", import.meta.url)),
       },
       { find: "~/runtime", replacement: fileURLToPath(new URL("./runtime", import.meta.url)) },
-      { find: "~/storage", replacement: fileURLToPath(new URL("./storage", import.meta.url)) },
       { find: "~/worker", replacement: fileURLToPath(new URL("./worker", import.meta.url)) },
-      { find: "~", replacement: fileURLToPath(new URL("./web", import.meta.url)) },
+      { find: "~/web", replacement: fileURLToPath(new URL("./web", import.meta.url)) },
     ],
   },
   test: {
-    include: ["*/test/**/*.test.{ts,tsx}"],
+    include: ["*/test/**/*.test.{ts,tsx}", "integrations/*/test/**/*.test.{ts,tsx}"],
     // Satisfy environment validation; unit tests use in-memory dependencies.
     env: {
       NODE_ENV: "test",

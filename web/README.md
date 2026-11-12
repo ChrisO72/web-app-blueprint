@@ -24,7 +24,7 @@ RATE_LIMIT_KEY_SECRET=               # Required: different random value, at leas
 ```
 
 Compose supplies internal database and Redis addresses. Startup commands set `NODE_ENV`.
-Optional integrations: [mail](../mail/README.md#configuration), [storage](../storage/README.md#configuration),
+Optional integrations: [mail](../integrations/mail/README.md#configuration), [storage](../integrations/storage/README.md#configuration),
 and [telemetry](../telemetry/README.md#configuration). Mail enables account confirmation and password resets.
 
 ## Run locally
@@ -92,8 +92,12 @@ Run production web as a supervised process. See [releases](../telemetry/sentry/r
 
 ## Development guides
 
+Server-only modules use `.server.ts` and must never enter client components. Route types in
+`.react-router/` are generated; use them in loaders and actions. Compiled application, telemetry,
+and migration artifacts live under root `build/`.
+
 - [Routes and forms](routes.md) — adding routes, loaders, actions, and validation.
 - [Authentication](auth.md) — sessions, authorization, and rate limits.
 - [UI](ui.md) — components, styling, and icons.
-- [File uploads](../storage/uploads.md) — changing the private-file flow.
+- [File uploads](../integrations/storage/uploads.md) — changing the private-file flow.
 - [Instrumentation](../telemetry/instrumentation.md) — tracing, error capture, and shutdown.

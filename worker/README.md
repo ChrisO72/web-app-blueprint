@@ -21,8 +21,8 @@ APP_URL=http://localhost:5173         # Web origin for email links
 ```
 
 Web authentication secrets are not required. Compose supplies internal database and Redis
-addresses. Optional integrations: [mail](../mail/README.md#configuration),
-[storage](../storage/README.md#configuration), and [telemetry](../telemetry/README.md#configuration).
+addresses. Optional integrations: [mail](../integrations/mail/README.md#configuration),
+[storage](../integrations/storage/README.md#configuration), and [telemetry](../telemetry/README.md#configuration).
 
 ## Run locally
 
@@ -85,6 +85,6 @@ Run production workers as supervised processes. See [releases](../telemetry/sent
 ## Development guides
 
 - [Jobs and schedules](jobs.md) — adding producers, handlers, retries, and schedules.
-- [Email templates](../mail/templates.md) — connecting email delivery.
-- [File uploads](../storage/uploads.md) — implementing file jobs.
+- [Email templates](../integrations/mail/templates.md) — connecting email delivery.
+- [File uploads](../integrations/storage/uploads.md) — implementing file jobs.
 - [Instrumentation](../telemetry/instrumentation.md) — queue tracing, errors, and shutdown.

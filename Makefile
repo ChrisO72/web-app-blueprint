@@ -1,4 +1,5 @@
 CHECK_COMPONENTS = web worker db mail storage telemetry runtime
+CHECK_PATH = $(if $(filter mail storage,$*),integrations/$*,$*)
 
 .PHONY: dev reload down check $(CHECK_COMPONENTS:%=check-%)
 
@@ -20,7 +21,7 @@ check:
 	npm run check
 
 $(CHECK_COMPONENTS:%=check-%): check-%:
-	npx prettier $* --write
+	npx prettier $(CHECK_PATH) --write
 	npm run typecheck
-	npx eslint $*
-	npm test -- $*/test/ --passWithNoTests
+	npx eslint $(CHECK_PATH)
+	npm test -- $(CHECK_PATH)/test/ --passWithNoTests

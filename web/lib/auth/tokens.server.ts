@@ -2,7 +2,7 @@ import crypto from "crypto";
 import jwt from "jsonwebtoken";
 import { rotateRefreshToken, insertRefreshToken } from "~/db/repositories/refreshTokens";
 import { getUserById } from "~/db/repositories/users";
-import { env } from "~/env.server";
+import { env } from "~/web/env.server";
 
 const JWT_SECRET = env.JWT_SECRET;
 const REFRESH_SECRET = env.REFRESH_SECRET;

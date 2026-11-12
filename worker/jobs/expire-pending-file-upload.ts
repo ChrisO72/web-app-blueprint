@@ -1,6 +1,6 @@
 import { getFileForCleanup, markFileFailed } from "~/db/repositories/files";
 import { log } from "~/telemetry/log.server";
-import { deleteStoredFile } from "~/storage/objects.server";
+import { deleteStoredFile } from "~/integrations/storage/objects.server";
 
 export const expirePendingFileUploadJobName = "expirePendingFileUpload" as const;
 export const PENDING_FILE_UPLOAD_TTL_MS = 30 * 60 * 1000;

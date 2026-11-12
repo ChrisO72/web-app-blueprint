@@ -1,8 +1,8 @@
 import { redirect } from "react-router";
 import { z } from "zod";
 import { getFileById } from "~/db/repositories/files";
-import { getAuthenticatedUser } from "~/lib/session.server";
-import { createFileDownloadUrl, isFileStorageEnabled } from "~/storage/objects.server";
+import { getAuthenticatedUser } from "~/web/lib/session.server";
+import { createFileDownloadUrl, isFileStorageEnabled } from "~/integrations/storage/objects.server";
 import type { Route } from "./+types/download";
 
 const paramsSchema = z.object({

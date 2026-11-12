@@ -2,17 +2,17 @@ import { useState } from "react";
 import { useFetcher } from "react-router";
 import { z } from "zod";
 import type { Route } from "./+types/index";
-import { requireAdmin } from "~/lib/session.server";
+import { requireAdmin } from "~/web/lib/session.server";
 import { getSiteSettings, updateSiteSettings } from "~/db/repositories/settings";
-import { Heading } from "~/components/ui-kit/heading";
-import { Description, Field, FieldGroup, Fieldset, Label } from "~/components/ui-kit/fieldset";
-import { Input } from "~/components/ui-kit/input";
-import { Button } from "~/components/ui-kit/button";
-import { Switch, SwitchField } from "~/components/ui-kit/switch";
-import { Badge } from "~/components/ui-kit/badge";
+import { Heading } from "~/web/components/ui-kit/heading";
+import { Description, Field, FieldGroup, Fieldset, Label } from "~/web/components/ui-kit/fieldset";
+import { Input } from "~/web/components/ui-kit/input";
+import { Button } from "~/web/components/ui-kit/button";
+import { Switch, SwitchField } from "~/web/components/ui-kit/switch";
+import { Badge } from "~/web/components/ui-kit/badge";
 import { XMarkIcon } from "@heroicons/react/16/solid";
-import type { ActionData, FieldErrors } from "~/lib/form";
-import { isEmailConfigured } from "~/mail/client.server";
+import type { ActionData, FieldErrors } from "~/web/lib/form";
+import { isEmailConfigured } from "~/integrations/mail/client.server";
 
 const settingsSchema = z.object({
   allowedDomains: z.array(z.string().trim().min(1)).default([]),

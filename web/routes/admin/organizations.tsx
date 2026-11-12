@@ -3,20 +3,25 @@ import { useEffect, useRef, useState } from "react";
 import { useFetcher } from "react-router";
 import { z } from "zod";
 import type { Route } from "./+types/organizations";
-import { FieldError } from "~/components/field-error";
-import { FormError } from "~/components/form-error";
-import { Button } from "~/components/ui-kit/button";
+import { FieldError } from "~/web/components/field-error";
+import { FormError } from "~/web/components/form-error";
+import { Button } from "~/web/components/ui-kit/button";
 import {
   Dialog,
   DialogActions,
   DialogBody,
   DialogDescription,
   DialogTitle,
-} from "~/components/ui-kit/dialog";
-import { Dropdown, DropdownButton, DropdownItem, DropdownMenu } from "~/components/ui-kit/dropdown";
-import { Field, Label } from "~/components/ui-kit/fieldset";
-import { Heading } from "~/components/ui-kit/heading";
-import { Input } from "~/components/ui-kit/input";
+} from "~/web/components/ui-kit/dialog";
+import {
+  Dropdown,
+  DropdownButton,
+  DropdownItem,
+  DropdownMenu,
+} from "~/web/components/ui-kit/dropdown";
+import { Field, Label } from "~/web/components/ui-kit/fieldset";
+import { Heading } from "~/web/components/ui-kit/heading";
+import { Input } from "~/web/components/ui-kit/input";
 import {
   Table,
   TableBody,
@@ -24,8 +29,8 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "~/components/ui-kit/table";
-import { Textarea } from "~/components/ui-kit/textarea";
+} from "~/web/components/ui-kit/table";
+import { Textarea } from "~/web/components/ui-kit/textarea";
 import {
   createOrganization,
   getOrganizationById,
@@ -34,8 +39,8 @@ import {
   updateOrganization,
 } from "~/db/repositories/organizations";
 import { getUsersByOrganizationId, listUsers } from "~/db/repositories/users";
-import { parseForm, type ActionData } from "~/lib/form";
-import { requireAdmin } from "~/lib/session.server";
+import { parseForm, type ActionData } from "~/web/lib/form";
+import { requireAdmin } from "~/web/lib/session.server";
 
 const organizationSchema = z.object({
   name: z.string().trim().min(1, "Name is required").max(255, "Name is too long"),

@@ -5,7 +5,7 @@ import {
   refreshAccessToken,
   verifyAccessToken,
 } from "./auth/tokens.server";
-import { env } from "~/env.server";
+import { env } from "~/web/env.server";
 import { getUserById, type User } from "~/db/repositories/users";
 
 const isProduction = env.NODE_ENV === "production";

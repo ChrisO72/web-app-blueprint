@@ -21,6 +21,6 @@ Keep queue payloads limited to the values needed to render the message. Configur
 backoff, retention, and a stable job ID in the enqueue helper. Email delivery is at least once, so a
 provider timeout may result in a duplicate message on retry.
 
-Follow the [job guide](../worker/jobs.md) when registering the delivery handler and enqueue helper.
-Read the [instrumentation guide](../telemetry/instrumentation.md) before changing error reporting;
+Follow the [job guide](../../worker/jobs.md) when registering the delivery handler and enqueue helper.
+Read the [instrumentation guide](../../telemetry/instrumentation.md) before changing error reporting;
 the dispatcher owns exception capture and retries.

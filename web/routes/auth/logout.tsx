@@ -1,6 +1,6 @@
 import { redirect } from "react-router";
-import { clearAuthCookies, readRefreshTokenCookie } from "~/lib/session.server";
-import { hashRefreshToken } from "~/lib/auth/tokens.server";
+import { clearAuthCookies, readRefreshTokenCookie } from "~/web/lib/session.server";
+import { hashRefreshToken } from "~/web/lib/auth/tokens.server";
 import { deleteRefreshTokenByHash } from "~/db/repositories/refreshTokens";
 import type { Route } from "./+types/logout";
 

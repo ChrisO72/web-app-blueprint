@@ -1,18 +1,18 @@
 import { useEffect, useRef, useState } from "react";
 import { Form, useActionData, useNavigation } from "react-router";
-import { Button } from "~/components/ui-kit/button";
+import { Button } from "~/web/components/ui-kit/button";
 import {
   Dialog,
   DialogActions,
   DialogBody,
   DialogDescription,
   DialogTitle,
-} from "~/components/ui-kit/dialog";
-import { Field, Label } from "~/components/ui-kit/fieldset";
-import { FieldError } from "~/components/field-error";
-import { Input } from "~/components/ui-kit/input";
+} from "~/web/components/ui-kit/dialog";
+import { Field, Label } from "~/web/components/ui-kit/fieldset";
+import { FieldError } from "~/web/components/field-error";
+import { Input } from "~/web/components/ui-kit/input";
 import { PlusIcon } from "@heroicons/react/24/outline";
-import type { ActionData } from "~/lib/form";
+import type { ActionData } from "~/web/lib/form";
 
 export function CreateItemDialog() {
   const [isOpen, setIsOpen] = useState(false);

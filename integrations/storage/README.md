@@ -36,7 +36,7 @@ docker compose up -d --wait storage # Start SeaweedFS and wait for its private b
 docker compose stop storage        # Retain stored files
 ```
 
-The [whole-app workflow](../README.md#run-the-whole-app) starts storage automatically. Web and
+The [whole-app workflow](../../README.md#run-the-whole-app) starts storage automatically. Web and
 worker wait for a successful SigV4-authenticated HEAD request to the configured bucket; a missing
 bucket or rejected credentials prevents startup.
 
@@ -46,6 +46,27 @@ both file bytes and SeaweedFS metadata across restarts. `npm run docker:wipe` de
 along with PostgreSQL and Redis data; separate Sentry data is preserved.
 
 ## Production
+
+### Render
+
+The root [Render Blueprint](../../render.yaml) includes `web-app-blueprint-storage`, using the
+same pinned SeaweedFS image and `mini` mode as local development. It creates the private
+`blueprint-files` bucket, generates credentials, and supplies all S3 settings to web and worker.
+The 10 GB persistent disk at `/data` stores both objects and metadata across deploys; increase
+`disk.sizeGB` in the Blueprint as storage grows.
+
+Storage runs as a public web service so browsers can reach its S3 API over Render's HTTPS URL.
+Both server operations and signed browser URLs use that endpoint with path-style addressing.
+Only the S3 port is published; WebDAV, the admin UI, Iceberg, and Lance are disabled. Anonymous
+object access is not configured.
+
+`WEED_S3_ALLOWEDORIGINS` configures SeaweedFS's `s3.allowedOrigins` flag from the web service's
+`RENDER_EXTERNAL_URL`. If you use a custom application domain, set this storage environment
+variable and the app services' `APP_URL` to that exact origin, then redeploy the affected services.
+Keep the storage endpoint variables pointed at the final browser-reachable URL when using a
+custom storage domain.
+
+### AWS S3
 
 Create a private S3 bucket and supply these settings to web and worker:
 
@@ -79,4 +100,4 @@ Compose passes `APP_URL` to SeaweedFS's `s3.allowedOrigins` setting for local br
 ## Development guides
 
 - [Uploads and downloads](uploads.md) — validation, authorization, signed URLs, and delivery.
-- [Repositories](../db/repositories/repository.md) — organization-scoped file metadata access.
+- [Repositories](../../db/repositories/repository.md) — organization-scoped file metadata access.

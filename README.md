@@ -5,14 +5,15 @@ Each part of the app has its own dedicated README file for more info.
 
 Cool stuff included: [TypeScript](https://www.typescriptlang.org/) | [React](https://react.dev/) | [React Router](https://reactrouter.com/) | [PostgreSQL](https://www.postgresql.org/) | [Redis](https://redis.io/) | [Vite](https://vite.dev/) | [Tailwind CSS](https://tailwindcss.com/) | [Drizzle ORM](https://orm.drizzle.team/) | [BullMQ](https://bullmq.io/) | [Headless UI](https://headlessui.com/) | [Motion](https://motion.dev/) | [Zod](https://zod.dev/) | [Heroicons](https://heroicons.com/) | [Lettermint](https://lettermint.co/)
 
-| Component                            | Purpose and setup                      |
-| ------------------------------------ | -------------------------------------- |
-| [Web](web/README.md)                 | React Router UI and server routes      |
-| [Worker](worker/README.md)           | BullMQ jobs and scheduled tasks        |
-| [Database](db/README.md)             | PostgreSQL, Drizzle, and migrations    |
-| [Mail](mail/README.md)               | Lettermint email delivery              |
-| [Storage](storage/README.md)         | Private S3 storage and local SeaweedFS |
-| [Telemetry](telemetry/README.md)     | Application monitoring and debugging   |
+| Component                                 | Purpose and setup                      |
+| ----------------------------------------- | -------------------------------------- |
+| [Web](web/README.md)                      | React Router UI and server routes      |
+| [Worker](worker/README.md)                | BullMQ jobs and scheduled tasks        |
+| [Database](db/README.md)                  | PostgreSQL, Drizzle, and migrations    |
+| [Mail](integrations/mail/README.md)       | Lettermint email delivery              |
+| [Storage](integrations/storage/README.md) | Private S3 storage and local SeaweedFS |
+| [Telemetry](telemetry/README.md)          | Application monitoring and debugging   |
+| [Runtime](runtime/README.md)              | Shared configuration and shutdown      |
 
 ```text
 ├── web/                 # React Router app, UI + server routes
@@ -28,8 +29,9 @@ Cool stuff included: [TypeScript](https://www.typescriptlang.org/) | [React](htt
 │   ├── schema/
 │   ├── repositories/
 │   └── drizzle/
-├── mail/                # Email sending and templates
-├── storage/             # Private S3 file storage
+├── integrations/        # Shared capabilities backed by external providers
+│   ├── mail/            # Email sending and templates
+│   └── storage/         # Private S3 file storage
 ├── telemetry/           # Application monitoring and debugging
 │   └── sentry/          # Hosted provider setup, CLI, and artifact uploads
 ├── runtime/             # Shared environment loading and shutdown
@@ -56,9 +58,9 @@ using the instructions in the [Web README](web/README.md#configuration).
 These integrations are optional. Check each README for configuration instructions:
 
 - **Email:** enable account confirmation and password-reset emails with Lettermint, or leave its
-  settings empty. See the [Mail README](mail/README.md#configuration).
+  settings empty. See the [Mail README](integrations/mail/README.md#configuration).
 - **File storage:** enable file uploads with S3; local SeaweedFS defaults are already included.
-  See the [Storage README](storage/README.md#configuration).
+  See the [Storage README](integrations/storage/README.md#configuration).
 - **Monitoring:** enable hosted Sentry reporting, or leave both DSN fields empty to disable it.
   See the [Sentry README](telemetry/sentry/README.md#setup).
 
@@ -100,7 +102,6 @@ Checks run locally. Component targets scope formatting, linting, and tests; type
 
 ## Development guides
 
-- [Code organization](docs/code-organization.md) — imports, server boundaries, generated files, and configuration ownership.
-- [Agent development workflow](docs/agent-workflow.md) — issue planning, reviews, implementation, functional verification, and documentation sync.
+- [Agent development skills](.agents/skills/README.md) — skills, descriptions, and example prompts.
 - Component READMEs link to task-specific guides and production commands.
 - [Agent instructions](AGENTS.md) — repository rules and routing to scoped instructions.

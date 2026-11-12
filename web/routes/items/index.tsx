@@ -5,8 +5,8 @@ import {
   createItem,
   softDeleteItem,
 } from "~/db/repositories/items";
-import { getAuthenticatedUser } from "~/lib/session.server";
-import { Heading } from "~/components/ui-kit/heading";
+import { getAuthenticatedUser } from "~/web/lib/session.server";
+import { Heading } from "~/web/components/ui-kit/heading";
 import {
   Table,
   TableBody,
@@ -14,14 +14,19 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "~/components/ui-kit/table";
+} from "~/web/components/ui-kit/table";
 import { CreateItemDialog } from "./CreateItemDialog";
 import { Pagination } from "./Pagination";
 import { redirect, useSubmit } from "react-router";
-import { Dropdown, DropdownButton, DropdownItem, DropdownMenu } from "~/components/ui-kit/dropdown";
+import {
+  Dropdown,
+  DropdownButton,
+  DropdownItem,
+  DropdownMenu,
+} from "~/web/components/ui-kit/dropdown";
 import { EllipsisHorizontalIcon } from "@heroicons/react/16/solid";
 import { z } from "zod";
-import { parseForm } from "~/lib/form";
+import { parseForm } from "~/web/lib/form";
 
 const createItemSchema = z.object({
   title: z.string().min(1, "Title is required").max(255, "Title too long"),

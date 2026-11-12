@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import { sendConfirmationEmail } from "~/mail/confirmation.server";
+import { sendConfirmationEmail } from "~/integrations/mail/confirmation.server";
 import { enqueueJob } from "../enqueue";
 
 export const sendConfirmationEmailJobName = "sendConfirmationEmail" as const;

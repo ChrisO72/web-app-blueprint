@@ -1,0 +1,3 @@
+interface:
+  display_name: "Prepare"
+  short_description: "Prepare the scope and plan for a development task."

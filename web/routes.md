@@ -23,12 +23,12 @@ Route modules export a `loader`, an `action`, and a default component as needed.
 import type { Route } from "./+types/index";
 import { Form, redirect, useActionData } from "react-router";
 import { z } from "zod";
-import { FieldError } from "~/components/field-error";
-import { FormError } from "~/components/form-error";
-import { Field, Label } from "~/components/ui-kit/fieldset";
-import { Input } from "~/components/ui-kit/input";
-import { getAuthenticatedUser } from "~/lib/session.server";
-import { parseForm, type ActionData } from "~/lib/form";
+import { FieldError } from "~/web/components/field-error";
+import { FormError } from "~/web/components/form-error";
+import { Field, Label } from "~/web/components/ui-kit/fieldset";
+import { Input } from "~/web/components/ui-kit/input";
+import { getAuthenticatedUser } from "~/web/lib/session.server";
+import { parseForm, type ActionData } from "~/web/lib/form";
 import { createItem } from "~/db/repositories/items";
 
 const createItemSchema = z.object({
