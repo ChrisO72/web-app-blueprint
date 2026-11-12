@@ -21,7 +21,7 @@ services:
     image:
       url: docker.io/chrislusf/seaweedfs:4.50
     dockerCommand: >-
-      mini -dir=/data -s3.port=8333
+      /entrypoint.sh mini -dir=/data -s3.port=8333
       -webdav=false -admin.ui=false
       -s3.port.iceberg=0 -s3.port.lance=0
     disk:
