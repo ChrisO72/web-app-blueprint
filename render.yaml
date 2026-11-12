@@ -4,18 +4,8 @@ envVarGroups:
       - key: NODE_VERSION
         value: "24.14.1"
   - name: web-app-blueprint-shared
-    envVars:
-      # Optional integrations stay disabled until configured in the Render Dashboard.
-      # Omit values so later Blueprint syncs preserve dashboard-managed settings.
-      - key: LETTERMINT_API_KEY
-      - key: LETTERMINT_MAIL_FROM
-      - key: SENTRY_DSN
-      - key: SENTRY_PUBLIC_DSN
-      - key: SENTRY_ENVIRONMENT
-      - key: SENTRY_RELEASE
-      - key: SENTRY_TRACES_SAMPLE_RATE
-      - key: SENTRY_REPLAYS_SESSION_SAMPLE_RATE
-      - key: SENTRY_REPLAYS_ON_ERROR_SAMPLE_RATE
+    # Configure optional shared env vars (e.g. Lettermint and Sentry) in the Render Dashboard.
+    envVars: []
 
 services:
   - type: keyvalue
