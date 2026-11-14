@@ -1,8 +1,8 @@
-name: fullstack-blueprint
+name: web-app-blueprint
 
 networks:
   default:
-    name: fullstack-blueprint
+    name: web-app-blueprint
 
 volumes:
   pgdata:
@@ -10,7 +10,7 @@ volumes:
   objectdata:
 
 x-app-environment: &app-environment
-  DATABASE_URL: postgresql://${POSTGRES_USER:-blueprint-user}:${POSTGRES_PASSWORD:-blueprint-password}@database:5432/blueprint
+  DATABASE_URL: postgresql://blueprint-user:blueprint-password@database:5432/blueprint
   REDIS_URL: redis://redis:6379
   APP_URL: ${APP_URL:-http://localhost:5173}
   LETTERMINT_API_KEY: ${LETTERMINT_API_KEY:-}
@@ -35,8 +35,8 @@ services:
     restart: always
     environment:
       POSTGRES_DB: "blueprint"
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-blueprint-password}
-      POSTGRES_USER: ${POSTGRES_USER:-blueprint-user}
+      POSTGRES_PASSWORD: blueprint-password
+      POSTGRES_USER: blueprint-user
     volumes:
       - pgdata:/var/lib/postgresql/data
     ports:
@@ -101,7 +101,7 @@ services:
     init: true
     restart: "no"
     environment:
-      DATABASE_URL: postgresql://${POSTGRES_USER:-blueprint-user}:${POSTGRES_PASSWORD:-blueprint-password}@database:5432/blueprint
+      DATABASE_URL: postgresql://blueprint-user:blueprint-password@database:5432/blueprint
     depends_on:
       database:
         condition: service_healthy

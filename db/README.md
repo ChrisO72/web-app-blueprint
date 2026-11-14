@@ -7,13 +7,11 @@ PostgreSQL with Drizzle ORM. All commands run from the repository root.
 Use the root `.env` (copy `.env.example` on first setup):
 
 ```dotenv
-POSTGRES_USER=blueprint-user          # Local PostgreSQL initialization
-POSTGRES_PASSWORD=blueprint-password  # Local PostgreSQL initialization
 DATABASE_URL=postgresql://blueprint-user:blueprint-password@127.0.0.1:55432/blueprint # Host tools
 ```
 
-Keep host credentials in `DATABASE_URL` in sync. Compose sets the database name to `blueprint`
-and supplies an internal URL to containers. Database tools require only `DATABASE_URL`.
+Local Compose uses fixed development credentials (`blueprint-user` / `blueprint-password`)
+and database name `blueprint`. The host `DATABASE_URL` above matches those defaults.
 
 ## Run locally
 
