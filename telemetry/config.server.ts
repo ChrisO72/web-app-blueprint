@@ -8,7 +8,7 @@ export const environment = config.SENTRY_ENVIRONMENT ?? process.env.NODE_ENV ?? 
 
 export function browserConfig(appUrl: string): BrowserConfig {
   return {
-    dsn: process.env.NODE_ENV === "test" ? undefined : config.SENTRY_PUBLIC_DSN,
+    dsn: process.env.NODE_ENV === "test" ? undefined : config.SENTRY_DSN,
     environment,
     release,
     tracesSampleRate: config.SENTRY_TRACES_SAMPLE_RATE,

@@ -6,14 +6,12 @@ needed for the task; a root-started session may not have loaded nested instructi
 
 ## Universal rules
 
-- Run `npm run check` before finishing changes. It is the standard verification gate.
-- Use `$blueprint-review-test` for requested reviews and configured project checks.
+- Run the relevant [checks](README.md#checks) before finishing changes.
 - Do not silence the type checker: no `any`, `@ts-ignore`, or unjustified `eslint-disable`.
 - Keep credentials out of code, documentation, and logs.
-- Keep unit tests in the owning component's `test/` directory. Read that component's instructions
+- Update docs only when a change makes existing guidance inaccurate or leaves a clear usage gap.
+  Keep updates minimal; docs explain current usage, not implementation details or change history.
   and relevant guide before changing coverage.
-- Keep coverage minimal and focused on application behavior. Use in-memory dependencies;
-  tests must not require application services, Docker, or external providers.
 
 ## Read when relevant
 

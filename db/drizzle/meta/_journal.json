@@ -15,6 +15,13 @@
       "when": 1792958793486,
       "tag": "0001_refresh_token_grace",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1794757227959,
+      "tag": "0002_account_avatars",
+      "breakpoints": true
     }
   ]
 }

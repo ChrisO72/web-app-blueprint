@@ -40,6 +40,7 @@ describe("refresh-token responses", () => {
       email: "user@example.com",
       firstName: null,
       lastName: null,
+      avatarFileId: null,
       role: "user",
       organizationId: 1,
       emailConfirmedAt: issuedAt,

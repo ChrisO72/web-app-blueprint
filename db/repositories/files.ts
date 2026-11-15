@@ -11,7 +11,14 @@ export async function getFileById(id: number, organizationId: number) {
   const [file] = await db
     .select()
     .from(files)
-    .where(and(eq(files.id, id), eq(files.organizationId, organizationId), isNull(files.deletedAt)))
+    .where(
+      and(
+        eq(files.id, id),
+        eq(files.organizationId, organizationId),
+        eq(files.purpose, "file"),
+        isNull(files.deletedAt),
+      ),
+    )
     .limit(1);
   return file ?? null;
 }
@@ -71,7 +78,14 @@ export async function softDeleteFile(id: number, organizationId: number) {
   const [file] = await db
     .update(files)
     .set({ deletedAt: new Date() })
-    .where(and(eq(files.id, id), eq(files.organizationId, organizationId), isNull(files.deletedAt)))
+    .where(
+      and(
+        eq(files.id, id),
+        eq(files.organizationId, organizationId),
+        eq(files.purpose, "file"),
+        isNull(files.deletedAt),
+      ),
+    )
     .returning();
   return file ?? null;
 }
@@ -80,7 +94,13 @@ export async function listFilesByOrgPaginated(organizationId: number, page: numb
   return await db
     .select()
     .from(files)
-    .where(and(eq(files.organizationId, organizationId), isNull(files.deletedAt)))
+    .where(
+      and(
+        eq(files.organizationId, organizationId),
+        eq(files.purpose, "file"),
+        isNull(files.deletedAt),
+      ),
+    )
     .orderBy(desc(files.createdAt))
     .limit(limit)
     .offset((page - 1) * limit);
@@ -90,6 +110,29 @@ export async function countFilesByOrg(organizationId: number) {
   const [result] = await db
     .select({ count: count() })
     .from(files)
-    .where(and(eq(files.organizationId, organizationId), isNull(files.deletedAt)));
+    .where(
+      and(
+        eq(files.organizationId, organizationId),
+        eq(files.purpose, "file"),
+        isNull(files.deletedAt),
+      ),
+    );
   return result?.count ?? 0;
+}
+
+export async function getOwnedAvatarFile(id: number, organizationId: number, userId: number) {
+  const [file] = await db
+    .select()
+    .from(files)
+    .where(
+      and(
+        eq(files.id, id),
+        eq(files.organizationId, organizationId),
+        eq(files.uploadedByUserId, userId),
+        eq(files.purpose, "avatar"),
+        isNull(files.deletedAt),
+      ),
+    )
+    .limit(1);
+  return file ?? null;
 }

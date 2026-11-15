@@ -34,3 +34,53 @@ example. The [route guide](routes.md#route-module-template) owns the form and va
 - Use `@heroicons/react` icons with `data-slot="icon"` so primitives style them correctly.
 - Use the shared `FormError` and `FieldError` components for action errors; details are in
   [form validation](routes.md#validation).
+
+## Toast notifications
+
+The root app mounts `ToastProvider`. Use `useToast` from [components/toast.tsx](components/toast.tsx)
+for brief action feedback. Success and ordinary notifications dismiss after five seconds; errors
+and loading notifications stay until dismissed or replaced. Timers pause on hover, keyboard focus,
+and while the window is inactive. Up to three notifications appear at once; new messages displace
+the oldest when full. Opening or closing a dialog preserves remaining time and does not repeat
+previous announcements.
+
+```tsx
+const toast = useToast();
+toast.success("Changes saved"); // Green check
+toast.error("Changes could not be saved", { description: "Please try again." }); // Red cross
+
+const id = toast.loading("Uploading…"); // Built-in spinner
+// When the operation completes, replace the loading notification in place:
+toast.success("Upload complete", { id });
+
+toast.show("Invitation sent", {
+  icon: <PaperAirplaneIcon data-slot="icon" />,
+  color: "var(--color-blue-500)", // Any CSS color
+  duration: 6000, // Milliseconds; null disables automatic dismissal
+});
+toast.dismiss(id);
+```
+
+Every helper accepts the same options, including `icon`, `color`, `description`, `duration`, and
+`id`. Pass `icon: null` to omit the icon, or supply `ToastSpinner` as a custom icon. Reusing an ID
+replaces the message and resets its timer. Routine messages use polite screen-reader announcements;
+reserve `priority: "assertive"` for urgent information. Motion respects reduced-motion preferences.
+
+For a mutation fetcher that returns `ActionData` (no error fields means success), use
+`useFetcherToast(fetcher, { success: "Changes saved" })` from
+[lib/use-fetcher-toast.ts](lib/use-fetcher-toast.ts). Field validation stays inline; form errors
+also appear in a persistent toast. Keep `FormError` and `FieldError` in the form so recovery
+guidance stays available. Add `loading: "Saving…"` when a loading notification is useful; omit it
+for short actions that already show a busy button. For frequent autosaves, prefer a quiet status
+beside the editor.
+
+Use `fieldErrors: "toast"` in the message options for row actions without editable form fields.
+Keep delete fetchers and their toast hooks in the list page so the notification can finish after
+the deleted row disappears. Return action data for these mutations; fetchers revalidate the list
+without changing its URL or pagination. The shared `Dialog` keeps notifications reachable while open.
+
+For operations spanning multiple requests, use `useOperationToast` from
+[lib/use-operation-toast.ts](lib/use-operation-toast.ts). Call `loading(message)` after client
+validation, then `success(message)`, `error(message)`, or `dismiss()` for the final result. These
+methods update one notification in place; leaving the component dismisses a pending notification.
+Uploads should report success only after server confirmation, never after failure cleanup.

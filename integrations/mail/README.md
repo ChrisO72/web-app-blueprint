@@ -10,7 +10,7 @@ Set these in root `.env`, or supply them through the production deployment envir
 ```dotenv
 APP_URL=http://localhost:5173  # Public web origin used in email links
 LETTERMINT_API_KEY=           # Provider API key; required to enable email
-LETTERMINT_MAIL_FROM=         # Verified sender address; required to enable email
+LETTERMINT_MAIL_FROM=         # Sender address; required to enable email. Example: "Your App <noreply@example.com>"
 ```
 
 Both Lettermint settings are optional for application startup. Set both to enable account

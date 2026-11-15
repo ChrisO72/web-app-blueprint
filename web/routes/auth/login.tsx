@@ -16,6 +16,8 @@ import { isEmailConfigured } from "~/integrations/mail/client.server";
 import { checkAuthRateLimit, createRateLimitResponse } from "~/web/lib/rate-limit.server";
 import { readAccessTokenCookie, setAuthCookies } from "~/web/lib/session.server";
 import type { Route } from "./+types/login";
+import { useEffect } from "react";
+import { useToast } from "~/web/components/toast";
 
 const loginSchema = z.object({
   email: z.email("Please enter a valid email address"),
@@ -30,7 +32,8 @@ export async function loader({ request }: Route.LoaderArgs) {
 
   const passwordResetComplete =
     new URL(request.url).searchParams.get("passwordReset") === "success";
-  return { passwordResetEnabled: isEmailConfigured, passwordResetComplete };
+  const passwordChanged = new URL(request.url).searchParams.get("passwordChanged") === "success";
+  return { passwordResetEnabled: isEmailConfigured, passwordResetComplete, passwordChanged };
 }
 
 export async function action({ request }: Route.ActionArgs): Promise<ActionData | Response> {
@@ -65,17 +68,20 @@ export default function LoginPage({ loaderData }: Route.ComponentProps) {
   const actionData = useActionData<ActionData>();
   const navigation = useNavigation();
   const isSubmitting = navigation.state === "submitting";
+  const toast = useToast();
+  useEffect(() => {
+    if (loaderData.passwordChanged || loaderData.passwordResetComplete) {
+      toast.success(loaderData.passwordChanged ? "Password changed" : "Password reset", {
+        id: "password-updated",
+        description: "Sign in with your new password.",
+      });
+    }
+  }, [loaderData.passwordChanged, loaderData.passwordResetComplete, toast]);
 
   return (
     <AuthLayout>
       <Form method="POST" className="grid w-full max-w-sm grid-cols-1 gap-8">
         <Heading>Sign in to your account</Heading>
-
-        {loaderData.passwordResetComplete && (
-          <div className="rounded-md bg-green-50 p-4 text-sm text-green-700 dark:bg-green-900/20 dark:text-green-400">
-            Your password has been reset. You can now sign in.
-          </div>
-        )}
 
         <FormError actionData={actionData} />
 

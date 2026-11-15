@@ -1,4 +1,5 @@
 import {
+  type AnyPgColumn,
   index,
   integer,
   pgTable,
@@ -9,6 +10,7 @@ import {
 } from "drizzle-orm/pg-core";
 import { organizations } from "./organizations";
 import { timestamps } from "./shared";
+import { files } from "./files";
 
 export const users = pgTable("users", {
   id: integer().primaryKey().generatedAlwaysAsIdentity(),
@@ -17,6 +19,9 @@ export const users = pgTable("users", {
   passwordHash: varchar("password_hash", { length: 255 }),
   firstName: varchar("first_name", { length: 100 }),
   lastName: varchar("last_name", { length: 100 }),
+  avatarFileId: integer("avatar_file_id").references((): AnyPgColumn => files.id, {
+    onDelete: "set null",
+  }),
   emailConfirmedAt: timestamp("email_confirmed_at"),
   role: varchar({ enum: ["admin", "user", "viewer"] })
     .notNull()

@@ -1,4 +1,4 @@
-import { Form, Outlet, useLocation } from "react-router";
+import { Outlet, useLocation } from "react-router";
 import { SidebarLayout } from "../components/ui-kit/sidebar-layout";
 import {
   Sidebar,
@@ -9,8 +9,8 @@ import {
   SidebarSection,
   SidebarFooter,
 } from "../components/ui-kit/sidebar";
-import { Navbar } from "../components/ui-kit/navbar";
-import { ThemeToggle } from "../components/theme-toggle";
+import { Navbar, NavbarSpacer, NavbarSection } from "../components/ui-kit/navbar";
+import { AccountMenu } from "../components/account-menu";
 import {
   authenticatedUserContext,
   getAuthenticatedUser,
@@ -26,7 +26,10 @@ export const middleware: Route.MiddlewareFunction[] = [
 
     const response = await next();
 
-    if (newAccessToken && newRefreshToken) {
+    const actionSetAuthCookies = response.headers
+      .getSetCookie()
+      .some((cookie) => cookie.startsWith("accessToken=") || cookie.startsWith("refreshToken="));
+    if (newAccessToken && newRefreshToken && !actionSetAuthCookies) {
       const cookies = await setAuthCookies(newAccessToken, newRefreshToken);
       cookies.forEach((cookie) => response.headers.append("Set-Cookie", cookie));
     }
@@ -48,7 +51,14 @@ export default function Layout({ loaderData }: Route.ComponentProps) {
 
   return (
     <SidebarLayout
-      navbar={<Navbar>{/* Mobile navbar content */}</Navbar>}
+      navbar={
+        <Navbar>
+          <NavbarSpacer />
+          <NavbarSection>
+            <AccountMenu user={user} mobile />
+          </NavbarSection>
+        </Navbar>
+      }
       sidebar={
         <Sidebar>
           <SidebarHeader>
@@ -74,21 +84,8 @@ export default function Layout({ loaderData }: Route.ComponentProps) {
               )}
             </SidebarSection>
           </SidebarBody>
-          <SidebarFooter>
-            <ThemeToggle />
-            <div className="flex items-center justify-between p-2">
-              <div className="flex items-center gap-4">
-                <div>
-                  <div>{user.firstName}</div>
-                  <div className="text-xs opacity-60">{user.email}</div>
-                </div>
-              </div>
-            </div>
-            <Form method="post" action="/logout">
-              <SidebarItem type="submit">
-                <SidebarLabel>Sign out</SidebarLabel>
-              </SidebarItem>
-            </Form>
+          <SidebarFooter className="max-lg:hidden">
+            <AccountMenu user={user} />
           </SidebarFooter>
         </Sidebar>
       }

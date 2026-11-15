@@ -15,6 +15,10 @@ Refresh rotation is serialized in PostgreSQL. Parallel requests may reuse the pr
 Protected loaders and actions read the cached user with `getAuthenticatedUser(context)`.
 User queries return an explicit public field projection; only `getUserCredentialsByEmail`
 includes the password hash for server-side authentication.
+The protected `/account` page lets users update their name and profile photo and change their
+password. Email is read-only. Password changes require the current password, revoke all refresh
+sessions and outstanding password-reset links, and sign out the current browser. Existing access
+tokens on other devices expire within 15 minutes.
 For admin-only routes, use `requireAdmin(context)`; non-admins redirect to `/`:
 
 ```ts
@@ -46,6 +50,7 @@ Public auth actions use Redis-backed fixed windows shared by every web instance:
 - Signup: 5 requests per submitted email per hour.
 - Password-reset requests and confirmation resend: 3 requests per submitted email per hour.
 - Password-reset completion: 5 attempts per account every 15 minutes, after token validation.
+- Password changes: 5 attempts per authenticated account every 15 minutes.
 
 Counters use HMAC-pseudonymized account identifiers, expire with their window, return `429` with `Retry-After` when exceeded, and fail open if Redis is unavailable.
 

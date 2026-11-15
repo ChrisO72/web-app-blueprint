@@ -19,6 +19,7 @@ import { isEmailConfigured } from "~/integrations/mail/client.server";
 import { readAccessTokenCookie } from "~/web/lib/session.server";
 import { enqueueConfirmationEmailJob } from "~/worker/jobs/send-confirmation-email";
 import type { Route } from "./+types/check-email";
+import { useFetcherToast } from "~/web/lib/use-fetcher-toast";
 
 type ResendActionData = ActionData & { resentAt?: string };
 
@@ -117,6 +118,10 @@ export default function CheckEmailPage({ loaderData }: Route.ComponentProps) {
     lastSentAt: string | null;
   };
   const fetcher = useFetcher<typeof action>();
+  useFetcherToast(fetcher, {
+    loading: "Sending confirmation email…",
+    success: "Confirmation email resent",
+  });
   const actionData = fetcher.data;
 
   const resentAt = actionData?.resentAt ?? null;
@@ -142,12 +147,6 @@ export default function CheckEmailPage({ loaderData }: Route.ComponentProps) {
         </Text>
 
         <FormError actionData={actionData} />
-
-        {resentAt && (
-          <div className="rounded-md bg-green-50 p-4 text-sm text-green-700 dark:bg-green-900/20 dark:text-green-400">
-            Confirmation email resent.
-          </div>
-        )}
 
         {email && (
           <fetcher.Form method="POST">

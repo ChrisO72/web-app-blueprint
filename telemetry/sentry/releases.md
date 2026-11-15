@@ -1,7 +1,7 @@
 # Releases and source maps
 
 Read this when building a release or uploading source maps. Configure the upload token using
-[README.md](README.md#configuration). Run commands from the repository root.
+[README.md](README.md#artifact-uploads). Run commands from the repository root.
 
 ```bash
 npm run build          # source maps and debug IDs; no upload credentials required

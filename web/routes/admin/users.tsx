@@ -11,7 +11,7 @@ import {
   TableHeader,
   TableRow,
 } from "~/web/components/ui-kit/table";
-import { redirect, useFetcher, useSubmit } from "react-router";
+import { useFetcher } from "react-router";
 import {
   Dropdown,
   DropdownButton,
@@ -21,7 +21,11 @@ import {
 import { EllipsisHorizontalIcon } from "@heroicons/react/16/solid";
 import { z } from "zod";
 import { Select } from "~/web/components/ui-kit/select";
-import { parseForm } from "~/web/lib/form";
+import { parseForm, type ActionData } from "~/web/lib/form";
+import { useFetcherToast } from "~/web/lib/use-fetcher-toast";
+import { FieldError } from "~/web/components/field-error";
+import { FormError } from "~/web/components/form-error";
+import { Field } from "~/web/components/ui-kit/fieldset";
 import { Combobox, ComboboxLabel, ComboboxOption } from "~/web/components/ui-kit/combobox";
 
 const ROLES = ["admin", "user", "viewer"] as const;
@@ -48,7 +52,7 @@ export async function loader({ context }: Route.LoaderArgs) {
   return { users, organizations, currentUserId: currentUser.id };
 }
 
-export async function action({ request, context }: Route.ActionArgs) {
+export async function action({ request, context }: Route.ActionArgs): Promise<ActionData> {
   const { user } = requireAdmin(context);
 
   const formData = await request.formData();
@@ -57,10 +61,10 @@ export async function action({ request, context }: Route.ActionArgs) {
     const { data, fieldErrors } = parseForm(formData, deleteUserSchema);
     if (fieldErrors) return { fieldErrors };
     if (data.id === user.id) {
-      return { fieldErrors: { id: ["Cannot delete yourself"] } };
+      return { formError: "Cannot delete yourself." };
     }
     await softDeleteUser(data.id);
-    return redirect(".");
+    return {};
   }
 
   if (request.method === "PATCH") {
@@ -68,10 +72,10 @@ export async function action({ request, context }: Route.ActionArgs) {
       const { data, fieldErrors } = parseForm(formData, updateRoleSchema);
       if (fieldErrors) return { fieldErrors };
       if (data.id === user.id) {
-        return { fieldErrors: { id: ["Cannot change your own role"] } };
+        return { formError: "Cannot change your own role." };
       }
       await updateUser(data.id, { role: data.role });
-      return redirect(".");
+      return {};
     }
 
     const { data, fieldErrors } = parseForm(formData, updateOrganizationSchema);
@@ -83,14 +87,19 @@ export async function action({ request, context }: Route.ActionArgs) {
     }
 
     await updateUser(data.id, { organizationId: data.organizationId });
-    return redirect(".");
+    return {};
   }
 
-  return null;
+  return { formError: "Unsupported request method." };
 }
 
 export default function AdminUsersPage({ loaderData }: Route.ComponentProps) {
   const { users, organizations, currentUserId } = loaderData;
+  const deleteFetcher = useFetcher<typeof action>();
+  useFetcherToast(deleteFetcher, {
+    success: "User deleted",
+    fieldErrors: "toast",
+  });
 
   return (
     <div>
@@ -105,6 +114,7 @@ export default function AdminUsersPage({ loaderData }: Route.ComponentProps) {
         </Heading>
       </div>
 
+      <FormError actionData={deleteFetcher.data} />
       {users.length === 0 ? (
         <div className="rounded-lg bg-zinc-50 py-12 text-center dark:bg-zinc-900">
           <p className="text-zinc-500 dark:text-zinc-400">No users found.</p>
@@ -147,7 +157,12 @@ export default function AdminUsersPage({ loaderData }: Route.ComponentProps) {
                   </TableCell>
                   <TableCell>{u.createdAt.toLocaleDateString()}</TableCell>
                   <TableCell>
-                    <UserActions userId={u.id} />
+                    <UserActions
+                      disabled={u.id === currentUserId || deleteFetcher.state !== "idle"}
+                      onDelete={() => {
+                        void deleteFetcher.submit({ id: String(u.id) }, { method: "DELETE" });
+                      }}
+                    />
                   </TableCell>
                 </TableRow>
               ))}
@@ -168,7 +183,11 @@ function OrganizationCombobox({
   currentOrganizationId: number;
   organizations: Route.ComponentProps["loaderData"]["organizations"];
 }) {
-  const fetcher = useFetcher();
+  const fetcher = useFetcher<typeof action>();
+  useFetcherToast(fetcher, {
+    success: "User organization updated",
+    fieldErrors: "toast",
+  });
   const optimisticOrganizationId = fetcher.formData
     ? Number(fetcher.formData.get("organizationId"))
     : currentOrganizationId;
@@ -176,30 +195,35 @@ function OrganizationCombobox({
     organizations.find((organization) => organization.id === optimisticOrganizationId) ?? null;
 
   return (
-    <Combobox
-      options={organizations}
-      value={selectedOrganization}
-      by="id"
-      displayValue={(organization) => organization?.name}
-      filter={(organization, query) =>
-        organization?.name.toLowerCase().includes(query.toLowerCase()) ?? false
-      }
-      onChange={(organization) => {
-        if (!organization || organization.id === currentOrganizationId) return;
-        fetcher.submit(
-          { id: userId.toString(), organizationId: organization.id.toString() },
-          { method: "PATCH" },
-        );
-      }}
-      aria-label="Organization"
-      className="min-w-48"
-    >
-      {(organization) => (
-        <ComboboxOption value={organization}>
-          <ComboboxLabel>{organization.name}</ComboboxLabel>
-        </ComboboxOption>
-      )}
-    </Combobox>
+    <Field>
+      <Combobox
+        options={organizations}
+        value={selectedOrganization}
+        by="id"
+        displayValue={(organization) => organization?.name}
+        filter={(organization, query) =>
+          organization?.name.toLowerCase().includes(query.toLowerCase()) ?? false
+        }
+        onChange={(organization) => {
+          if (!organization || organization.id === currentOrganizationId) return;
+          fetcher.submit(
+            { id: userId.toString(), organizationId: organization.id.toString() },
+            { method: "PATCH" },
+          );
+        }}
+        aria-label="Organization"
+        className="min-w-48"
+        disabled={fetcher.state !== "idle"}
+      >
+        {(organization) => (
+          <ComboboxOption value={organization}>
+            <ComboboxLabel>{organization.name}</ComboboxLabel>
+          </ComboboxOption>
+        )}
+      </Combobox>
+      <FormError actionData={fetcher.data} />
+      <FieldError name="organizationId" actionData={fetcher.data} />
+    </Field>
   );
 }
 
@@ -212,43 +236,47 @@ function RoleSelect({
   currentRole: string;
   disabled?: boolean;
 }) {
-  const fetcher = useFetcher();
+  const fetcher = useFetcher<typeof action>();
+  useFetcherToast(fetcher, {
+    success: "User role updated",
+    fieldErrors: "toast",
+  });
   const optimisticRole = fetcher.formData ? (fetcher.formData.get("role") as string) : currentRole;
 
   return (
-    <Select
-      name="role"
-      value={optimisticRole}
-      disabled={disabled}
-      onChange={(e) => {
-        fetcher.submit({ id: userId.toString(), role: e.target.value }, { method: "PATCH" });
-      }}
-    >
-      {ROLES.map((role) => (
-        <option key={role} value={role}>
-          {role.charAt(0).toUpperCase() + role.slice(1)}
-        </option>
-      ))}
-    </Select>
+    <Field>
+      <Select
+        name="role"
+        aria-label="Role"
+        invalid={!!fetcher.data?.fieldErrors?.role}
+        value={optimisticRole}
+        disabled={disabled || fetcher.state !== "idle"}
+        onChange={(e) => {
+          fetcher.submit({ id: userId.toString(), role: e.target.value }, { method: "PATCH" });
+        }}
+      >
+        {ROLES.map((role) => (
+          <option key={role} value={role}>
+            {role.charAt(0).toUpperCase() + role.slice(1)}
+          </option>
+        ))}
+      </Select>
+      <FormError actionData={fetcher.data} />
+      <FieldError name="role" actionData={fetcher.data} />
+    </Field>
   );
 }
 
-function UserActions({ userId }: { userId: number }) {
-  const submit = useSubmit();
-
-  const handleDelete = () => {
-    const formData = new FormData();
-    formData.append("id", userId.toString());
-    submit(formData, { method: "DELETE" });
-  };
-
+function UserActions({ disabled, onDelete }: { disabled: boolean; onDelete: () => void }) {
   return (
     <Dropdown>
       <DropdownButton plain aria-label="More options">
         <EllipsisHorizontalIcon data-slot="icon" />
       </DropdownButton>
       <DropdownMenu>
-        <DropdownItem onClick={handleDelete}>Delete</DropdownItem>
+        <DropdownItem onClick={onDelete} disabled={disabled}>
+          Delete
+        </DropdownItem>
       </DropdownMenu>
     </Dropdown>
   );
