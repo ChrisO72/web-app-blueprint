@@ -61,7 +61,7 @@ These integrations are optional. Check each README for configuration instruction
   settings empty. See the [Mail README](integrations/mail/README.md#configuration).
 - **File storage:** enable file uploads with S3; local SeaweedFS defaults are already included.
   See the [Storage README](integrations/storage/README.md#configuration).
-- **Monitoring:** enable hosted Sentry reporting, or leave both DSN fields empty to disable it.
+- **Monitoring:** enable hosted Sentry reporting, or leave `SENTRY_DSN` empty to disable it.
   See the [Sentry README](telemetry/sentry/README.md#setup).
 
 ## Run the whole app

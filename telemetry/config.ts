@@ -30,7 +30,6 @@ export const sentryEnvSchema = z
   .object({
     NODE_ENV: optionalString,
     SENTRY_DSN: dsn,
-    SENTRY_PUBLIC_DSN: dsn,
     SENTRY_ENVIRONMENT: optionalString,
     SENTRY_RELEASE: optionalString,
     SENTRY_TRACES_SAMPLE_RATE: rate,

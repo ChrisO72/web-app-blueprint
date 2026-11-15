@@ -8,31 +8,32 @@ All commands run from the repository root.
 
 1. Create a Sentry account and organization, then create a project with the React Router platform.
    Use the SDK integration already included in this blueprint; skip the setup wizard's code changes.
-2. In Project Settings → Client Keys (DSN), copy the DSN into both `SENTRY_DSN` and
-   `SENTRY_PUBLIC_DSN` in root `.env`. Copy it exactly, including its regional ingestion hostname.
+2. In Project Settings → Client Keys (DSN), copy the DSN into `SENTRY_DSN`
+   in root `.env`. Copy it exactly, including its regional ingestion hostname.
 3. Run the app using the [root workflow](../../README.md#run-the-whole-app), or the web/worker
    host workflows. Restart application processes after changing SDK configuration.
 
 Browser, web, and worker use the same project, distinguished by `service` and `runtime` tags.
-Both DSN fields are optional; leaving them empty disables remote reporting. DSNs enable event
+The DSN is optional; leaving it empty disables remote reporting. It enables event
 submission and can be public. API tokens grant additional access and must remain private.
 
 ## Configuration
 
+Add tooling settings to root `.env` or the CI environment only when needed.
+
 ```dotenv
-SENTRY_DSN=                  # Project DSN for server and worker
-SENTRY_PUBLIC_DSN=           # Same project DSN for browser reporting
+SENTRY_DSN=                  # Project DSN shared by browser, server, and worker
 
 # Optional host/CI tooling; not needed to run the app or build artifacts.
 SENTRY_URL=https://sentry.io  # Default CLI and artifact-upload endpoint; optional override
-SENTRY_ORG=                  # Your organization slug
-SENTRY_PROJECT=              # Your project slug
-SENTRY_AGENT_TOKEN=          # Read-only token for investigations
-SENTRY_UPLOAD_TOKEN=         # Separate token for artifact uploads
+SENTRY_ORG=                  # Organization slug; required for CLI investigations and uploads
+SENTRY_PROJECT=              # Project slug; required for CLI investigations and uploads
+SENTRY_AGENT_TOKEN=          # Read-only token; required for CLI investigations
+SENTRY_UPLOAD_TOKEN=         # Separate token; required for source-map uploads
 ```
 
 Use slugs from Sentry settings, not display names or numeric IDs. Both slugs and the appropriate
-command's token are required when invoking the tools. Only the DSNs are needed for reporting.
+command's token are required when invoking the tools. Only the DSN is needed for reporting.
 Application sampling and labels are documented in [telemetry configuration](../README.md#configuration).
 
 ### Tooling tokens
