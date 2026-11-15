@@ -17,6 +17,9 @@ export const files = pgTable(
     }),
     storageKey: varchar("storage_key", { length: 512 }).notNull().unique(),
     originalFilename: varchar("original_filename", { length: 255 }).notNull(),
+    purpose: varchar({ enum: ["file", "avatar"] })
+      .notNull()
+      .default("file"),
     contentType: varchar("content_type", { length: 255 }).notNull(),
     expectedSize: integer("expected_size").notNull(),
     actualSize: integer("actual_size"),

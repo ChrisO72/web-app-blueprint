@@ -32,3 +32,11 @@ For high-volume delivery, put CloudFront in front of the private bucket with Ori
 and issue CloudFront signed URLs or cookies after the same organization authorization check. Keep
 uploads pointed directly at S3; a CDN is a download optimization, not required storage
 infrastructure.
+
+## Profile photos
+
+The protected `/account` page uses the same private upload lifecycle for JPEG, PNG, and WebP
+photos up to 5 MiB. Avatar metadata is separate from ordinary files and is accessible only to the
+owning account. Photos do not appear in the Files listing. `/account/avatar` authorizes the current
+photo and redirects to a signed inline URL. Replaced and removed photos are retired and cleaned
+up by the upload cleanup worker after outstanding upload signatures expire.

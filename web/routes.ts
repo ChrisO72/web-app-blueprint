@@ -13,6 +13,8 @@ export default [
   // Protected routes
   layout("routes/layout.tsx", [
     index("routes/home.tsx"),
+    route("account", "routes/account/index.tsx"),
+    route("account/avatar", "routes/account/avatar.ts"),
     route("files", "routes/files/index.tsx"),
     route("files/:fileId/download", "routes/files/download.ts"),
     route("files/:fileId/preview", "routes/files/preview.ts"),

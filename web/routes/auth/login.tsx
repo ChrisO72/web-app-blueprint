@@ -30,7 +30,8 @@ export async function loader({ request }: Route.LoaderArgs) {
 
   const passwordResetComplete =
     new URL(request.url).searchParams.get("passwordReset") === "success";
-  return { passwordResetEnabled: isEmailConfigured, passwordResetComplete };
+  const passwordChanged = new URL(request.url).searchParams.get("passwordChanged") === "success";
+  return { passwordResetEnabled: isEmailConfigured, passwordResetComplete, passwordChanged };
 }
 
 export async function action({ request }: Route.ActionArgs): Promise<ActionData | Response> {
@@ -71,9 +72,11 @@ export default function LoginPage({ loaderData }: Route.ComponentProps) {
       <Form method="POST" className="grid w-full max-w-sm grid-cols-1 gap-8">
         <Heading>Sign in to your account</Heading>
 
-        {loaderData.passwordResetComplete && (
+        {(loaderData.passwordResetComplete || loaderData.passwordChanged) && (
           <div className="rounded-md bg-green-50 p-4 text-sm text-green-700 dark:bg-green-900/20 dark:text-green-400">
-            Your password has been reset. You can now sign in.
+            {loaderData.passwordChanged
+              ? "Your password has been changed. Sign in with your new password."
+              : "Your password has been reset. You can now sign in."}
           </div>
         )}
 

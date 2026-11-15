@@ -5,7 +5,7 @@ import { env } from "~/web/env.server";
 import { log } from "~/telemetry/log.server";
 
 export type AuthRateLimitAction =
-  "login" | "signup" | "password-reset" | "password-reset-complete" | "resend";
+  "login" | "signup" | "password-reset" | "password-reset-complete" | "password-change" | "resend";
 
 type RateLimitRule = {
   limit: number;
@@ -43,6 +43,7 @@ export const AUTH_RATE_LIMIT_POLICIES: AuthRateLimitPolicies = {
   signup: { limit: 5, windowSeconds: 60 * 60 },
   "password-reset": { limit: 3, windowSeconds: 60 * 60 },
   "password-reset-complete": { limit: 5, windowSeconds: 15 * 60 },
+  "password-change": { limit: 5, windowSeconds: 15 * 60 },
   resend: { limit: 3, windowSeconds: 60 * 60 },
 };
 

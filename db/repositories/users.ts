@@ -1,13 +1,21 @@
 import { and, count, eq, isNull, sql } from "drizzle-orm";
 import { db } from "../db";
-import { type InsertUser, type SelectUser, users } from "../schema/auth";
+import {
+  type InsertUser,
+  type SelectUser,
+  users,
+  refreshTokens,
+  passwordResetTokens,
+} from "../schema/auth";
 import { organizations } from "../schema/organizations";
+import { files } from "../schema/files";
 
 const userColumns = {
   id: users.id,
   email: users.email,
   firstName: users.firstName,
   lastName: users.lastName,
+  avatarFileId: users.avatarFileId,
   emailConfirmedAt: users.emailConfirmedAt,
   role: users.role,
   organizationId: users.organizationId,
@@ -95,4 +103,110 @@ export async function getUserCredentialsByEmail(email: string) {
     .where(and(eq(users.email, email.toLowerCase()), isNull(users.deletedAt)))
     .limit(1);
   return user ?? null;
+}
+
+export async function updateUserProfile(
+  id: number,
+  organizationId: number,
+  data: Pick<InsertUser, "firstName" | "lastName">,
+) {
+  const [user] = await db
+    .update(users)
+    .set(data)
+    .where(and(eq(users.id, id), eq(users.organizationId, organizationId), isNull(users.deletedAt)))
+    .returning(userColumns);
+  return user ?? null;
+}
+
+export async function getUserCredentialsById(id: number, organizationId: number) {
+  const [user] = await db
+    .select({ passwordHash: users.passwordHash })
+    .from(users)
+    .where(and(eq(users.id, id), eq(users.organizationId, organizationId), isNull(users.deletedAt)))
+    .limit(1);
+  return user ?? null;
+}
+
+export async function changeUserPassword(
+  id: number,
+  organizationId: number,
+  previousHash: string,
+  passwordHash: string,
+) {
+  return db.transaction(async (tx) => {
+    const [user] = await tx
+      .update(users)
+      .set({ passwordHash })
+      .where(
+        and(
+          eq(users.id, id),
+          eq(users.organizationId, organizationId),
+          eq(users.passwordHash, previousHash),
+          isNull(users.deletedAt),
+        ),
+      )
+      .returning({ id: users.id });
+    if (!user) return false;
+    await tx.delete(refreshTokens).where(eq(refreshTokens.userId, id));
+    await tx.delete(passwordResetTokens).where(eq(passwordResetTokens.userId, id));
+    return true;
+  });
+}
+
+// Lock the account before attaching a confirmed upload so concurrent edits cannot
+// retire a photo that a newer request has just selected.
+export async function replaceUserAvatar(
+  id: number,
+  organizationId: number,
+  expectedAvatarId: number | null,
+  fileId: number | null,
+  actualSize?: number,
+) {
+  return db.transaction(async (tx) => {
+    const [user] = await tx
+      .select({ avatarFileId: users.avatarFileId })
+      .from(users)
+      .where(
+        and(eq(users.id, id), eq(users.organizationId, organizationId), isNull(users.deletedAt)),
+      )
+      .for("update");
+    if (!user) return false;
+    if (user.avatarFileId === fileId) return true;
+    if (user.avatarFileId !== expectedAvatarId) return false;
+
+    if (fileId !== null) {
+      const [file] = await tx
+        .update(files)
+        .set({ status: "ready", actualSize })
+        .where(
+          and(
+            eq(files.id, fileId),
+            eq(files.organizationId, organizationId),
+            eq(files.uploadedByUserId, id),
+            eq(files.purpose, "avatar"),
+            eq(files.status, "pending"),
+            isNull(files.deletedAt),
+          ),
+        )
+        .returning({ id: files.id });
+      if (!file) return false;
+    }
+
+    await tx.update(users).set({ avatarFileId: fileId }).where(eq(users.id, id));
+    if (user.avatarFileId !== null) {
+      await tx
+        .update(files)
+        .set({ deletedAt: new Date() })
+        .where(
+          and(
+            eq(files.id, user.avatarFileId),
+            eq(files.organizationId, organizationId),
+            eq(files.uploadedByUserId, id),
+            eq(files.purpose, "avatar"),
+            isNull(files.deletedAt),
+          ),
+        );
+    }
+    return true;
+  });
 }
