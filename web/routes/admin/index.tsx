@@ -53,7 +53,7 @@ export async function action({ request, context }: Route.ActionArgs): Promise<Ac
 export default function AdminSettingsPage({ loaderData }: Route.ComponentProps) {
   const { settings, isEmailConfigured } = loaderData;
   const fetcher = useFetcher<typeof action>();
-  useFetcherToast(fetcher, { loading: "Saving settings…", success: "Settings saved" });
+  useFetcherToast(fetcher, { success: "Settings saved" });
 
   const [domains, setDomains] = useState<string[]>(settings.allowedDomains ?? []);
   const [domainInput, setDomainInput] = useState("");

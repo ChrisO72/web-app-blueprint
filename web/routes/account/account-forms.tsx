@@ -31,17 +31,9 @@ export function SettingsRow({
   );
 }
 
-export function SuccessMessage({ children }: { children: ReactNode }) {
-  return (
-    <p role="status" className="text-sm/6 text-green-700 dark:text-green-400">
-      {children}
-    </p>
-  );
-}
-
 export function PersonalDetailsForm({ user }: { user: AvatarUser }) {
   const fetcher = useFetcher<AccountActionData>();
-  useFetcherToast(fetcher, { loading: "Saving changes…", success: "Changes saved" });
+  useFetcherToast(fetcher, { success: "Changes saved" });
   const busy = fetcher.state !== "idle";
   return (
     <fetcher.Form
@@ -93,6 +85,7 @@ export function PersonalDetailsForm({ user }: { user: AvatarUser }) {
 
 export function PasswordForm() {
   const fetcher = useFetcher<AccountActionData>();
+  useFetcherToast(fetcher, { success: "Password changed" });
   const busy = fetcher.state !== "idle";
   return (
     <fetcher.Form method="post" action="/account">

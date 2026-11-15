@@ -2,6 +2,7 @@ import * as Headless from '@headlessui/react'
 import clsx from 'clsx'
 import type React from 'react'
 import { Text } from './text'
+import { DialogToastViewport } from '../toast'
 
 const sizes = {
   xs: 'sm:max-w-xs',
@@ -46,6 +47,9 @@ export function Dialog({
           </Headless.DialogPanel>
         </div>
       </div>
+      <Headless.Portal>
+        <DialogToastViewport />
+      </Headless.Portal>
     </Headless.Dialog>
   )
 }

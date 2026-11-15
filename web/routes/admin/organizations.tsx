@@ -41,6 +41,7 @@ import {
 import { getUsersByOrganizationId, listUsers } from "~/db/repositories/users";
 import { parseForm, type ActionData } from "~/web/lib/form";
 import { requireAdmin } from "~/web/lib/session.server";
+import { useFetcherToast } from "~/web/lib/use-fetcher-toast";
 
 const organizationSchema = z.object({
   name: z.string().trim().min(1, "Name is required").max(255, "Name is too long"),
@@ -134,6 +135,11 @@ export async function action({
 
 export default function AdminOrganizationsPage({ loaderData }: Route.ComponentProps) {
   const { organizations, currentOrganizationId } = loaderData;
+  const deleteFetcher = useFetcher<typeof action>();
+  useFetcherToast(deleteFetcher, {
+    success: "Organization deleted",
+    fieldErrors: "toast",
+  });
 
   return (
     <div>
@@ -149,6 +155,7 @@ export default function AdminOrganizationsPage({ loaderData }: Route.ComponentPr
         <CreateOrganizationDialog />
       </div>
 
+      <FormError actionData={deleteFetcher.data} />
       {organizations.length === 0 ? (
         <div className="rounded-lg bg-zinc-50 py-12 text-center dark:bg-zinc-900">
           <p className="text-zinc-500 dark:text-zinc-400">No organizations found.</p>
@@ -178,8 +185,16 @@ export default function AdminOrganizationsPage({ loaderData }: Route.ComponentPr
                     <OrganizationActions
                       organization={organization}
                       canDelete={
-                        organization.id !== currentOrganizationId && organization.userCount === 0
+                        organization.id !== currentOrganizationId &&
+                        organization.userCount === 0 &&
+                        deleteFetcher.state === "idle"
                       }
+                      onDelete={() => {
+                        void deleteFetcher.submit(
+                          { id: String(organization.id) },
+                          { method: "DELETE" },
+                        );
+                      }}
                     />
                   </TableCell>
                 </TableRow>
@@ -195,6 +210,7 @@ export default function AdminOrganizationsPage({ loaderData }: Route.ComponentPr
 function CreateOrganizationDialog() {
   const [isOpen, setIsOpen] = useState(false);
   const fetcher = useFetcher<typeof action>();
+  useFetcherToast(fetcher, { success: "Organization created" });
   const formRef = useRef<HTMLFormElement>(null);
   const isSubmitting = fetcher.state !== "idle";
 
@@ -212,7 +228,12 @@ function CreateOrganizationDialog() {
         New organization
       </Button>
 
-      <Dialog open={isOpen} onClose={() => setIsOpen(false)}>
+      <Dialog
+        open={isOpen}
+        onClose={() => {
+          if (!isSubmitting) setIsOpen(false);
+        }}
+      >
         <DialogTitle>Create organization</DialogTitle>
         <DialogDescription>Add an organization that users can belong to.</DialogDescription>
         <DialogBody>
@@ -237,13 +258,17 @@ function CreateOrganizationDialog() {
 function OrganizationActions({
   organization,
   canDelete,
+  onDelete,
 }: {
   organization: Route.ComponentProps["loaderData"]["organizations"][number];
   canDelete: boolean;
+  onDelete: () => void;
 }) {
   const [isEditing, setIsEditing] = useState(false);
   const updateFetcher = useFetcher<typeof action>();
-  const deleteFetcher = useFetcher<typeof action>();
+  useFetcherToast(updateFetcher, {
+    success: "Organization updated",
+  });
   const isUpdating = updateFetcher.state !== "idle";
 
   useEffect(() => {
@@ -254,7 +279,7 @@ function OrganizationActions({
 
   const handleDelete = () => {
     if (!window.confirm(`Delete ${organization.name}?`)) return;
-    deleteFetcher.submit({ id: organization.id.toString() }, { method: "DELETE" });
+    onDelete();
   };
 
   return (
@@ -271,7 +296,12 @@ function OrganizationActions({
         </DropdownMenu>
       </Dropdown>
 
-      <Dialog open={isEditing} onClose={() => setIsEditing(false)}>
+      <Dialog
+        open={isEditing}
+        onClose={() => {
+          if (!isUpdating) setIsEditing(false);
+        }}
+      >
         <DialogTitle>Edit organization</DialogTitle>
         <DialogDescription>Update this organization&apos;s details.</DialogDescription>
         <DialogBody>

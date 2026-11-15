@@ -14,8 +14,10 @@ import { ErrorMessage, Field, Label } from "~/web/components/ui-kit/fieldset";
 import { Text } from "~/web/components/ui-kit/text";
 import { UserAvatar, type AvatarUser } from "~/web/components/user-avatar";
 import { AVATAR_CONTENT_TYPES, MAX_AVATAR_BYTES } from "~/web/lib/avatar";
-import { SettingsRow, SuccessMessage } from "./account-forms";
+import { SettingsRow } from "./account-forms";
 import type { AccountActionData } from "./index";
+import { useFetcherToast } from "~/web/lib/use-fetcher-toast";
+import { useOperationToast } from "~/web/lib/use-operation-toast";
 
 export function ProfilePhotoForm({
   user,
@@ -25,8 +27,11 @@ export function ProfilePhotoForm({
   storageEnabled: boolean;
 }) {
   const removeFetcher = useFetcher<AccountActionData>();
+  useFetcherToast(removeFetcher, {
+    success: "Profile photo removed",
+  });
   const [isOpen, setIsOpen] = useState(false);
-  const [lastAction, setLastAction] = useState<"remove" | "upload" | null>(null);
+  const [showRemovalError, setShowRemovalError] = useState(false);
   const removing = removeFetcher.state !== "idle";
   const hasPhoto = user.avatarFileId !== null;
 
@@ -43,7 +48,7 @@ export function ProfilePhotoForm({
                   type="button"
                   disabled={removing}
                   onClick={() => {
-                    setLastAction("remove");
+                    setShowRemovalError(true);
                     void removeFetcher.submit(
                       { intent: "avatar-remove" },
                       { method: "post", action: "/account" },
@@ -58,7 +63,7 @@ export function ProfilePhotoForm({
                 type="button"
                 disabled={removing}
                 onClick={() => {
-                  setLastAction(null);
+                  setShowRemovalError(false);
                   setIsOpen(true);
                 }}
               >
@@ -68,16 +73,9 @@ export function ProfilePhotoForm({
           )}
         </div>
         {!storageEnabled && <Text className="mt-4">Profile photos are currently unavailable.</Text>}
-        {storageEnabled && (
-          <div className="mt-4 space-y-2">
-            {lastAction === "remove" && <FormError actionData={removeFetcher.data} />}
-            {removing && <Text role="status">Removing your photo…</Text>}
-            {!removing && lastAction === "remove" && removeFetcher.data?.success && (
-              <SuccessMessage>Your photo has been removed.</SuccessMessage>
-            )}
-            {lastAction === "upload" && (
-              <SuccessMessage>Your photo has been updated.</SuccessMessage>
-            )}
+        {storageEnabled && showRemovalError && removeFetcher.data?.formError && (
+          <div className="mt-4">
+            <FormError actionData={removeFetcher.data} />
           </div>
         )}
         {isOpen && (
@@ -85,7 +83,6 @@ export function ProfilePhotoForm({
             hasPhoto={hasPhoto}
             onClose={() => setIsOpen(false)}
             onSuccess={() => {
-              setLastAction("upload");
               setIsOpen(false);
             }}
           />
@@ -109,30 +106,46 @@ function ProfilePhotoDialog({
   const finishFetcher = useFetcher<AccountActionData>();
   const inputRef = useRef<HTMLInputElement>(null);
   const selectedFile = useRef<File | null>(null);
-  const handledPreparation = useRef<number | null>(null);
+  const handledPreparation = useRef<AccountActionData | undefined>(undefined);
   const handledFinish = useRef<AccountActionData | undefined>(undefined);
+  const uploadAbort = useRef<AbortController | null>(null);
+  const operation = useOperationToast();
+  useEffect(() => () => uploadAbort.current?.abort(), []);
   const [uploading, setUploading] = useState(false);
   const [clientError, setClientError] = useState<string>();
   const [phase, setPhase] = useState<"idle" | "prepare" | "finish">("idle");
   const busy = uploading || prepareFetcher.state !== "idle" || finishFetcher.state !== "idle";
 
   useEffect(() => {
-    if (prepareFetcher.state !== "idle") return;
+    if (
+      prepareFetcher.state !== "idle" ||
+      !prepareFetcher.data ||
+      handledPreparation.current === prepareFetcher.data
+    )
+      return;
+    handledPreparation.current = prepareFetcher.data;
     if (prepareFetcher.data?.formError || prepareFetcher.data?.fieldErrors) {
       setUploading(false);
+      if (prepareFetcher.data.formError) operation.error(prepareFetcher.data.formError);
+      else operation.dismiss();
       return;
     }
     const prepared = prepareFetcher.data?.prepared;
     const file = selectedFile.current;
-    if (!prepared || !file || handledPreparation.current === prepared.fileId) return;
-    handledPreparation.current = prepared.fileId;
+    if (!prepared || !file) return;
+    const controller = new AbortController();
+    uploadAbort.current = controller;
 
     void (async () => {
       try {
         const body = new FormData();
         for (const [name, value] of Object.entries(prepared.fields)) body.append(name, value);
         body.append("file", file);
-        const response = await fetch(prepared.url, { method: "POST", body });
+        const response = await fetch(prepared.url, {
+          method: "POST",
+          body,
+          signal: controller.signal,
+        });
         if (!response.ok) throw new Error("Photo upload failed");
         setPhase("finish");
         await finishFetcher.submit(
@@ -140,17 +153,19 @@ function ProfilePhotoDialog({
           { method: "post", action: "/account" },
         );
       } catch {
+        if (controller.signal.aborted) return;
         setClientError("The photo could not be uploaded. Please try again.");
+        operation.error("The photo could not be uploaded. Please try again.");
         setPhase("finish");
         await finishFetcher.submit(
           { intent: "avatar-fail", fileId: String(prepared.fileId) },
           { method: "post", action: "/account" },
         );
       } finally {
-        setUploading(false);
+        if (!controller.signal.aborted) setUploading(false);
       }
     })();
-  }, [prepareFetcher.state, prepareFetcher.data, finishFetcher]);
+  }, [prepareFetcher.state, prepareFetcher.data, finishFetcher, operation]);
 
   useEffect(() => {
     if (
@@ -161,15 +176,20 @@ function ProfilePhotoDialog({
       return;
     handledFinish.current = finishFetcher.data;
     if (finishFetcher.data.success && finishFetcher.data.intent === "avatar-confirm") {
+      operation.success("Profile photo updated");
       onSuccess();
+    } else if (finishFetcher.data.formError) {
+      operation.error(finishFetcher.data.formError);
+    } else if (finishFetcher.data.fieldErrors) {
+      operation.dismiss();
     }
-  }, [finishFetcher.state, finishFetcher.data, onSuccess]);
+  }, [finishFetcher.state, finishFetcher.data, onSuccess, operation]);
 
   function upload(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (busy) return;
     setClientError(undefined);
-    setPhase("prepare");
+    setPhase("idle");
     const file = inputRef.current?.files?.[0];
     if (!file) {
       setClientError("Choose a photo to upload.");
@@ -185,6 +205,8 @@ function ProfilePhotoDialog({
     }
     selectedFile.current = file;
     setUploading(true);
+    setPhase("prepare");
+    operation.loading("Updating profile photo…");
     void prepareFetcher.submit(
       {
         intent: "avatar-prepare",
@@ -242,7 +264,6 @@ function ProfilePhotoDialog({
               ))}
             {phase === "finish" && <FieldError name="fileId" actionData={finishFetcher.data} />}
           </Field>
-          {busy && <Text role="status">Uploading your photo…</Text>}
         </form>
       </DialogBody>
       <DialogActions>

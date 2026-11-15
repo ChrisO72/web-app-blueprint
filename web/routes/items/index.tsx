@@ -17,7 +17,7 @@ import {
 } from "~/web/components/ui-kit/table";
 import { CreateItemDialog } from "./CreateItemDialog";
 import { Pagination } from "./Pagination";
-import { redirect, useSubmit } from "react-router";
+import { useFetcher } from "react-router";
 import {
   Dropdown,
   DropdownButton,
@@ -26,7 +26,9 @@ import {
 } from "~/web/components/ui-kit/dropdown";
 import { EllipsisHorizontalIcon } from "@heroicons/react/16/solid";
 import { z } from "zod";
-import { parseForm } from "~/web/lib/form";
+import { parseForm, type ActionData } from "~/web/lib/form";
+import { useFetcherToast } from "~/web/lib/use-fetcher-toast";
+import { FormError } from "~/web/components/form-error";
 
 const createItemSchema = z.object({
   title: z.string().min(1, "Title is required").max(255, "Title too long"),
@@ -71,11 +73,11 @@ export async function loader({ request, context }: Route.LoaderArgs) {
   };
 }
 
-export async function action({ request, context }: Route.ActionArgs) {
+export async function action({
+  request,
+  context,
+}: Route.ActionArgs): Promise<ActionData & { success?: true }> {
   const user = getAuthenticatedUser(context);
-
-  const url = new URL(request.url);
-  const redirectUrl = url.search ? `.${url.search}` : ".";
 
   const formData = await request.formData();
 
@@ -83,7 +85,7 @@ export async function action({ request, context }: Route.ActionArgs) {
     const { data, fieldErrors } = parseForm(formData, deleteItemSchema);
     if (fieldErrors) return { fieldErrors };
     await softDeleteItem(data.id, user.organizationId);
-    return redirect(redirectUrl);
+    return { success: true };
   }
 
   const { data, fieldErrors } = parseForm(formData, createItemSchema);
@@ -95,11 +97,16 @@ export async function action({ request, context }: Route.ActionArgs) {
     description: data.description ?? null,
   });
 
-  return redirect(redirectUrl);
+  return { success: true };
 }
 
 export default function ItemsPage({ loaderData }: Route.ComponentProps) {
   const { items, page, totalPages, totalCount, pageSize, pageSizeOptions } = loaderData;
+  const deleteFetcher = useFetcher<typeof action>();
+  useFetcherToast(deleteFetcher, {
+    success: "Item deleted",
+    fieldErrors: "toast",
+  });
 
   return (
     <div className="flex h-[calc(100vh-8rem)] flex-col lg:h-[calc(100vh-6rem)]">
@@ -115,6 +122,7 @@ export default function ItemsPage({ loaderData }: Route.ComponentProps) {
         <CreateItemDialog />
       </div>
 
+      <FormError actionData={deleteFetcher.data} />
       {items.length === 0 ? (
         <div className="rounded-lg bg-zinc-50 py-12 text-center dark:bg-zinc-900">
           <p className="text-zinc-500 dark:text-zinc-400">No items found.</p>
@@ -142,7 +150,13 @@ export default function ItemsPage({ loaderData }: Route.ComponentProps) {
                     <TableCell>{item.status}</TableCell>
                     <TableCell>{item.priority || 0}</TableCell>
                     <TableCell>
-                      <ItemActions itemId={item.id} />
+                      <ItemActions
+                        itemId={item.id}
+                        deleting={deleteFetcher.state !== "idle"}
+                        onDelete={() => {
+                          void deleteFetcher.submit({ id: String(item.id) }, { method: "DELETE" });
+                        }}
+                      />
                     </TableCell>
                   </TableRow>
                 ))}
@@ -164,15 +178,15 @@ export default function ItemsPage({ loaderData }: Route.ComponentProps) {
   );
 }
 
-function ItemActions({ itemId }: { itemId: number }) {
-  const submit = useSubmit();
-
-  const handleDelete = () => {
-    const formData = new FormData();
-    formData.append("id", itemId.toString());
-    submit(formData, { method: "DELETE" });
-  };
-
+function ItemActions({
+  itemId,
+  deleting,
+  onDelete,
+}: {
+  itemId: number;
+  deleting: boolean;
+  onDelete: () => void;
+}) {
   return (
     <Dropdown>
       <DropdownButton plain aria-label="More options">
@@ -180,7 +194,9 @@ function ItemActions({ itemId }: { itemId: number }) {
       </DropdownButton>
       <DropdownMenu>
         <DropdownItem href={`/items/${itemId}`}>View</DropdownItem>
-        <DropdownItem onClick={handleDelete}>Delete</DropdownItem>
+        <DropdownItem onClick={onDelete} disabled={deleting}>
+          Delete
+        </DropdownItem>
       </DropdownMenu>
     </Dropdown>
   );

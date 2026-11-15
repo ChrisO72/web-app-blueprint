@@ -47,6 +47,16 @@ type ToastApi = {
 };
 
 const ToastContext = createContext<ToastApi | null>(null);
+type ViewportState = {
+  notifications: Notification[];
+  remaining: WeakMap<Notification, number>;
+  announced: WeakSet<Notification>;
+  pagePaused: boolean;
+  dismiss: ToastApi["dismiss"];
+  activeDialog?: string;
+  registerDialog: (id: string) => () => void;
+};
+const ViewportContext = createContext<ViewportState | null>(null);
 const VISIBLE_LIMIT = 3;
 
 export function useToast(): ToastApi {
@@ -81,9 +91,17 @@ export function ToastSpinner() {
 
 export function ToastProvider({ children }: { children: ReactNode }) {
   const [notifications, setNotifications] = useState<Notification[]>([]);
+  // Keep notification lifetime independent of the page/dialog viewport that renders it.
+  const [remaining] = useState(() => new WeakMap<Notification, number>());
+  const [announced] = useState(() => new WeakSet<Notification>());
   const [pagePaused, setPagePaused] = useState(false);
+  const [dialogs, setDialogs] = useState<string[]>([]);
   const prefix = useId();
   const sequence = useRef(0);
+  const registerDialog = useCallback((id: string) => {
+    setDialogs((current) => [...current, id]);
+    return () => setDialogs((current) => current.filter((entry) => entry !== id));
+  }, []);
 
   const dismiss = useCallback((id: string) => {
     setNotifications((current) => current.filter((notification) => notification.id !== id));
@@ -101,7 +119,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
       };
       setNotifications((current) => {
         const index = current.findIndex((entry) => entry.id === id);
-        if (index === -1) return [...current, notification];
+        if (index === -1) return [...current, notification].slice(-VISIBLE_LIMIT);
         return current.map((entry) => (entry.id === id ? notification : entry));
       });
       return id;
@@ -145,15 +163,50 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
-  const visible = notifications.slice(0, VISIBLE_LIMIT);
+  const viewport: ViewportState = {
+    notifications,
+    remaining,
+    announced,
+    pagePaused,
+    dismiss,
+    registerDialog,
+    activeDialog: dialogs.at(-1),
+  };
 
   return (
     <ToastContext.Provider value={toast}>
-      {children}
-      {/* Keep live regions mounted before inserting messages. Only visible toasts are announced. */}
+      <ViewportContext.Provider value={viewport}>
+        {children}
+        {!viewport.activeDialog && <ToastViewport state={viewport} />}
+      </ViewportContext.Provider>
+    </ToastContext.Provider>
+  );
+}
+
+/** Mounted through a nested Headless UI portal so modal focus and inert handling include it. */
+export function DialogToastViewport() {
+  const state = useContext(ViewportContext);
+  const id = useId();
+  const register = state?.registerDialog;
+  useEffect(() => register?.(id), [register, id]);
+  return state?.activeDialog === id ? <ToastViewport state={state} /> : null;
+}
+
+function ToastViewport({ state }: { state: ViewportState }) {
+  const { notifications, remaining, announced, pagePaused, dismiss } = state;
+  const [announcements, setAnnouncements] = useState<Notification[]>([]);
+  useEffect(() => {
+    setAnnouncements(notifications.filter((notification) => !announced.has(notification)));
+  }, [notifications, announced]);
+  useEffect(() => {
+    for (const notification of announcements) announced.add(notification);
+  }, [announcements, announced]);
+  return (
+    <>
+      {/* Mount empty live regions first; moving viewports must not announce old messages again. */}
       {(["polite", "assertive"] as const).map((priority) => (
         <div key={priority} aria-live={priority} aria-relevant="additions text" className="sr-only">
-          {visible
+          {announcements
             .filter((entry) => (entry.priority ?? "polite") === priority)
             .map((entry) => (
               <p key={entry.id}>
@@ -170,10 +223,11 @@ export function ToastProvider({ children }: { children: ReactNode }) {
       >
         <ol className="flex w-full max-w-sm flex-col gap-3">
           <AnimatePresence initial={false}>
-            {visible.map((notification) => (
+            {notifications.map((notification) => (
               <ToastCard
                 key={notification.id}
                 notification={notification}
+                remaining={remaining}
                 pagePaused={pagePaused}
                 dismiss={dismiss}
               />
@@ -181,40 +235,36 @@ export function ToastProvider({ children }: { children: ReactNode }) {
           </AnimatePresence>
         </ol>
       </section>
-    </ToastContext.Provider>
+    </>
   );
 }
 
 function ToastCard({
   notification,
+  remaining,
   pagePaused,
   dismiss,
 }: {
   notification: Notification;
+  remaining: ViewportState["remaining"];
   pagePaused: boolean;
   dismiss: ToastApi["dismiss"];
 }) {
   const reduceMotion = useReducedMotion();
   const [hovered, setHovered] = useState(false);
   const [focused, setFocused] = useState(false);
-  const remaining = useRef(notification.duration);
   const paused = pagePaused || hovered || focused;
 
   useEffect(() => {
-    remaining.current = notification.duration;
-  }, [notification]);
-
-  useEffect(() => {
-    if (paused || remaining.current === null) return;
+    const duration = remaining.get(notification) ?? notification.duration;
+    if (paused || duration === null) return;
     const started = Date.now();
-    const timer = window.setTimeout(() => dismiss(notification.id), Math.max(0, remaining.current));
+    const timer = window.setTimeout(() => dismiss(notification.id), Math.max(0, duration));
     return () => {
       window.clearTimeout(timer);
-      if (remaining.current !== null) {
-        remaining.current = Math.max(0, remaining.current - (Date.now() - started));
-      }
+      remaining.set(notification, Math.max(0, duration - (Date.now() - started)));
     };
-  }, [notification, paused, dismiss]);
+  }, [notification, remaining, paused, dismiss]);
 
   return (
     <motion.li

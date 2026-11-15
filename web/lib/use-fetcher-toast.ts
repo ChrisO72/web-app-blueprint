@@ -1,40 +1,43 @@
 import { useEffect, useRef } from "react";
 import type { FetcherWithComponents } from "react-router";
-import { useToast } from "~/web/components/toast";
 import type { ActionData } from "~/web/lib/form";
+import { useOperationToast } from "~/web/lib/use-operation-toast";
 
-/** Connect a mutation fetcher to one loading toast, then replace it with its result. */
+/** Show mutation feedback, optionally replacing a loading toast with the result. */
 export function useFetcherToast(
   fetcher: Pick<FetcherWithComponents<ActionData>, "state" | "data">,
-  messages: { loading: string; success: string },
+  messages: { loading?: string; success: string; fieldErrors?: "inline" | "toast" },
 ) {
-  const toast = useToast();
+  const operation = useOperationToast();
   const pending = useRef(false);
-  const id = useRef<string | undefined>(undefined);
 
   useEffect(() => {
     if (fetcher.state === "submitting" && !pending.current) {
       pending.current = true;
-      id.current = toast.loading(messages.loading, { id: id.current });
+      if (messages.loading) operation.loading(messages.loading);
+      else operation.dismiss();
     }
     if (fetcher.state !== "idle" || !pending.current) return;
     pending.current = false;
 
     if (fetcher.data?.formError) {
-      toast.error(fetcher.data.formError, { id: id.current });
+      operation.error(fetcher.data.formError);
+    } else if (fetcher.data?.fieldErrors && messages.fieldErrors === "toast") {
+      const error = Object.values(fetcher.data.fieldErrors).flat().find(Boolean);
+      if (error) operation.error(error);
+      else operation.dismiss();
     } else if (!fetcher.data || fetcher.data.fieldErrors) {
       // Validation guidance stays next to the form fields.
-      if (id.current) toast.dismiss(id.current);
+      operation.dismiss();
     } else {
-      toast.success(messages.success, { id: id.current });
+      operation.success(messages.success);
     }
-  }, [fetcher.state, fetcher.data, messages.loading, messages.success, toast]);
-
-  useEffect(
-    () => () => {
-      if (pending.current && id.current) toast.dismiss(id.current);
-      pending.current = false;
-    },
-    [toast],
-  );
+  }, [
+    fetcher.state,
+    fetcher.data,
+    messages.loading,
+    messages.success,
+    messages.fieldErrors,
+    operation,
+  ]);
 }

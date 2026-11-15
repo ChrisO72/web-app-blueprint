@@ -1,6 +1,6 @@
 import { EllipsisHorizontalIcon } from "@heroicons/react/16/solid";
 import { useState } from "react";
-import { redirect, useActionData, useSubmit } from "react-router";
+import { useFetcher } from "react-router";
 import { z } from "zod";
 import { FormError } from "~/web/components/form-error";
 import { Badge } from "~/web/components/ui-kit/badge";
@@ -47,6 +47,7 @@ import {
 import type { Route } from "./+types/index";
 import { Pagination } from "../items/Pagination";
 import { UploadFileDialog } from "./UploadFileDialog";
+import { useFetcherToast } from "~/web/lib/use-fetcher-toast";
 
 const prepareUploadSchema = z.object({
   intent: z.literal("prepare"),
@@ -148,8 +149,7 @@ export async function action({
       }
     }
 
-    const url = new URL(request.url);
-    return redirect(url.search ? `.${url.search}` : ".");
+    return { intent: "delete", success: true };
   }
 
   const intent = formData.get("intent");
@@ -253,6 +253,11 @@ export async function action({
 }
 
 export default function FilesPage({ loaderData }: Route.ComponentProps) {
+  const deleteFetcher = useFetcher<FileActionData>();
+  useFetcherToast(deleteFetcher, {
+    success: "File deleted",
+    fieldErrors: "toast",
+  });
   if (!loaderData.storageEnabled) {
     return (
       <div>
@@ -270,7 +275,6 @@ export default function FilesPage({ loaderData }: Route.ComponentProps) {
   }
 
   const { files, page, pageSize, pageSizeOptions, totalCount, totalPages } = loaderData;
-  const actionData = useActionData<FileActionData>();
 
   return (
     <div className="flex h-[calc(100vh-8rem)] flex-col lg:h-[calc(100vh-6rem)]">
@@ -286,7 +290,7 @@ export default function FilesPage({ loaderData }: Route.ComponentProps) {
         <UploadFileDialog />
       </div>
 
-      <FormError actionData={actionData} />
+      <FormError actionData={deleteFetcher.data} />
 
       {files.length === 0 ? (
         <div className="mt-4 rounded-lg bg-zinc-50 py-12 text-center dark:bg-zinc-900">
@@ -329,7 +333,14 @@ export default function FilesPage({ loaderData }: Route.ComponentProps) {
                     </TableCell>
                     <TableCell>{new Date(file.createdAt).toLocaleString()}</TableCell>
                     <TableCell>
-                      <FileActions fileId={file.id} ready={file.status === "ready"} />
+                      <FileActions
+                        fileId={file.id}
+                        ready={file.status === "ready"}
+                        deleting={deleteFetcher.state !== "idle"}
+                        onDelete={() => {
+                          void deleteFetcher.submit({ id: String(file.id) }, { method: "DELETE" });
+                        }}
+                      />
                     </TableCell>
                   </TableRow>
                 ))}
@@ -393,15 +404,17 @@ function FileStatus({ status }: { status: "pending" | "ready" | "failed" }) {
   return <Badge color={colors[status]}>{status}</Badge>;
 }
 
-function FileActions({ fileId, ready }: { fileId: number; ready: boolean }) {
-  const submit = useSubmit();
-
-  const handleDelete = () => {
-    const formData = new FormData();
-    formData.set("id", fileId.toString());
-    submit(formData, { method: "DELETE" });
-  };
-
+function FileActions({
+  fileId,
+  ready,
+  deleting,
+  onDelete,
+}: {
+  fileId: number;
+  ready: boolean;
+  deleting: boolean;
+  onDelete: () => void;
+}) {
   return (
     <Dropdown>
       <DropdownButton plain aria-label="File actions">
@@ -409,7 +422,9 @@ function FileActions({ fileId, ready }: { fileId: number; ready: boolean }) {
       </DropdownButton>
       <DropdownMenu anchor="bottom end">
         {ready && <DropdownItem href={`/files/${fileId}/download`}>Download</DropdownItem>}
-        <DropdownItem onClick={handleDelete}>Delete</DropdownItem>
+        <DropdownItem onClick={onDelete} disabled={deleting}>
+          Delete
+        </DropdownItem>
       </DropdownMenu>
     </Dropdown>
   );

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Form, useActionData, useNavigation } from "react-router";
+import { useFetcher } from "react-router";
 import { Button } from "~/web/components/ui-kit/button";
 import {
   Dialog,
@@ -12,22 +12,25 @@ import { Field, Label } from "~/web/components/ui-kit/fieldset";
 import { FieldError } from "~/web/components/field-error";
 import { Input } from "~/web/components/ui-kit/input";
 import { PlusIcon } from "@heroicons/react/24/outline";
-import type { ActionData } from "~/web/lib/form";
+import { FormError } from "~/web/components/form-error";
+import { useFetcherToast } from "~/web/lib/use-fetcher-toast";
+import type { action } from "./index";
 
 export function CreateItemDialog() {
   const [isOpen, setIsOpen] = useState(false);
-  const actionData = useActionData<ActionData>();
-  const navigation = useNavigation();
-  const isSubmitting = navigation.state === "submitting";
+  const fetcher = useFetcher<typeof action>();
+  const actionData = fetcher.data;
+  useFetcherToast(fetcher, { success: "Item created" });
+  const isSubmitting = fetcher.state !== "idle";
   const formRef = useRef<HTMLFormElement>(null);
 
   // Reset form and close dialog on successful submission
   useEffect(() => {
-    if (navigation.state === "idle" && !actionData?.fieldErrors) {
+    if (fetcher.state === "idle" && actionData?.success) {
       formRef.current?.reset();
       setIsOpen(false);
     }
-  }, [navigation.state, actionData]);
+  }, [fetcher.state, actionData]);
 
   return (
     <>
@@ -36,11 +39,22 @@ export function CreateItemDialog() {
         Create Item
       </Button>
 
-      <Dialog open={isOpen} onClose={() => setIsOpen(false)}>
+      <Dialog
+        open={isOpen}
+        onClose={() => {
+          if (!isSubmitting) setIsOpen(false);
+        }}
+      >
         <DialogTitle>Create Item</DialogTitle>
         <DialogDescription>Add a new item to your list.</DialogDescription>
         <DialogBody>
-          <Form ref={formRef} method="post" id="create-item" className="grid grid-cols-1 gap-8">
+          <fetcher.Form
+            ref={formRef}
+            method="post"
+            id="create-item"
+            className="grid grid-cols-1 gap-8"
+          >
+            <FormError actionData={actionData} />
             <Field>
               <Label>Title</Label>
               <Input
@@ -65,7 +79,7 @@ export function CreateItemDialog() {
               />
               <FieldError name="description" actionData={actionData} />
             </Field>
-          </Form>
+          </fetcher.Form>
         </DialogBody>
         <DialogActions>
           <Button plain onClick={() => setIsOpen(false)} disabled={isSubmitting}>
