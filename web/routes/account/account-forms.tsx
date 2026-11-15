@@ -9,6 +9,7 @@ import { Input } from "~/web/components/ui-kit/input";
 import { Text } from "~/web/components/ui-kit/text";
 import type { AvatarUser } from "~/web/components/user-avatar";
 import type { AccountActionData } from "./index";
+import { useFetcherToast } from "~/web/lib/use-fetcher-toast";
 
 export function SettingsRow({
   title,
@@ -40,6 +41,7 @@ export function SuccessMessage({ children }: { children: ReactNode }) {
 
 export function PersonalDetailsForm({ user }: { user: AvatarUser }) {
   const fetcher = useFetcher<AccountActionData>();
+  useFetcherToast(fetcher, { loading: "Saving changes…", success: "Changes saved" });
   const busy = fetcher.state !== "idle";
   return (
     <fetcher.Form
@@ -78,9 +80,6 @@ export function PersonalDetailsForm({ user }: { user: AvatarUser }) {
             <Label>Email address</Label>
             <Input type="email" value={user.email} readOnly autoComplete="email" />
           </Field>
-          {fetcher.data?.success && !busy && (
-            <SuccessMessage>Your details have been saved.</SuccessMessage>
-          )}
           <div className="flex justify-end">
             <Button type="submit" disabled={busy}>
               {busy ? "Saving…" : "Save changes"}

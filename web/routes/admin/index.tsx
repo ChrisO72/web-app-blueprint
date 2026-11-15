@@ -13,6 +13,7 @@ import { Badge } from "~/web/components/ui-kit/badge";
 import { XMarkIcon } from "@heroicons/react/16/solid";
 import type { ActionData, FieldErrors } from "~/web/lib/form";
 import { isEmailConfigured } from "~/integrations/mail/client.server";
+import { useFetcherToast } from "~/web/lib/use-fetcher-toast";
 
 const settingsSchema = z.object({
   allowedDomains: z.array(z.string().trim().min(1)).default([]),
@@ -52,6 +53,7 @@ export async function action({ request, context }: Route.ActionArgs): Promise<Ac
 export default function AdminSettingsPage({ loaderData }: Route.ComponentProps) {
   const { settings, isEmailConfigured } = loaderData;
   const fetcher = useFetcher<typeof action>();
+  useFetcherToast(fetcher, { loading: "Saving settings…", success: "Settings saved" });
 
   const [domains, setDomains] = useState<string[]>(settings.allowedDomains ?? []);
   const [domainInput, setDomainInput] = useState("");
@@ -73,11 +75,6 @@ export default function AdminSettingsPage({ loaderData }: Route.ComponentProps) 
   };
 
   const isSaving = fetcher.state !== "idle";
-  const saved =
-    fetcher.state === "idle" &&
-    fetcher.data !== undefined &&
-    !fetcher.data.fieldErrors &&
-    !fetcher.data.formError;
 
   return (
     <div>
@@ -173,9 +170,6 @@ export default function AdminSettingsPage({ loaderData }: Route.ComponentProps) 
           <Button type="submit" disabled={isSaving}>
             {isSaving ? "Saving…" : "Save settings"}
           </Button>
-          {saved && (
-            <span className="text-sm text-green-600 dark:text-green-400">Settings saved.</span>
-          )}
         </div>
       </fetcher.Form>
     </div>
