@@ -1,15 +1,5 @@
-import { Outlet, useLocation } from "react-router";
-import { SidebarLayout } from "../components/ui-kit/sidebar-layout";
-import {
-  Sidebar,
-  SidebarBody,
-  SidebarHeader,
-  SidebarItem,
-  SidebarLabel,
-  SidebarSection,
-  SidebarFooter,
-} from "../components/ui-kit/sidebar";
-import { Navbar, NavbarSpacer, NavbarSection } from "../components/ui-kit/navbar";
+import { NavLink, Outlet } from "react-router";
+import { AppFrame } from "../components/app-frame";
 import { AccountMenu } from "../components/account-menu";
 import {
   authenticatedUserContext,
@@ -45,52 +35,36 @@ export function loader({ context }: Route.LoaderArgs) {
 }
 
 export default function Layout({ loaderData }: Route.ComponentProps) {
-  const location = useLocation();
   const { user } = loaderData;
-  const pathname = location.pathname || "/";
 
   return (
-    <SidebarLayout
-      navbar={
-        <Navbar>
-          <NavbarSpacer />
-          <NavbarSection>
-            <AccountMenu user={user} mobile />
-          </NavbarSection>
-        </Navbar>
-      }
-      sidebar={
-        <Sidebar>
-          <SidebarHeader>
-            <div className="px-2 py-1">
-              <h2 className="text-lg font-semibold text-zinc-950 dark:text-white">Cool App Name</h2>
-            </div>
-          </SidebarHeader>
-          <SidebarBody>
-            <SidebarSection>
-              <SidebarItem href="/" current={pathname === "/"}>
-                <SidebarLabel>Dashboard</SidebarLabel>
-              </SidebarItem>
-              <SidebarItem href="/files" current={pathname.startsWith("/files")}>
-                <SidebarLabel>Files</SidebarLabel>
-              </SidebarItem>
-              <SidebarItem href="/items" current={pathname.startsWith("/items")}>
-                <SidebarLabel>Items</SidebarLabel>
-              </SidebarItem>
-              {user.role === "admin" && (
-                <SidebarItem href="/admin" current={pathname.startsWith("/admin")}>
-                  <SidebarLabel>Admin</SidebarLabel>
-                </SidebarItem>
-              )}
-            </SidebarSection>
-          </SidebarBody>
-          <SidebarFooter className="max-lg:hidden">
-            <AccountMenu user={user} />
-          </SidebarFooter>
-        </Sidebar>
+    <AppFrame
+      navigation={
+        <nav
+          aria-label="Main navigation"
+          className="flex flex-wrap items-center gap-x-6 gap-y-1 text-sm"
+        >
+          <NavLink to="/" end className="nav-link">
+            Home
+          </NavLink>
+          <NavLink to="/files" className="nav-link">
+            Files
+          </NavLink>
+          <NavLink to="/items" className="nav-link">
+            Items
+          </NavLink>
+          {user.role === "admin" && (
+            <NavLink to="/admin" className="nav-link">
+              Admin
+            </NavLink>
+          )}
+          <AccountMenu user={user} />
+        </nav>
       }
     >
-      <Outlet />
-    </SidebarLayout>
+      <main id="main" tabIndex={-1} className="page-width py-12 outline-none sm:py-20">
+        <Outlet />
+      </main>
+    </AppFrame>
   );
 }

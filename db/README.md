@@ -7,11 +7,11 @@ PostgreSQL with Drizzle ORM. All commands run from the repository root.
 Use the root `.env` (copy `.env.example` on first setup):
 
 ```dotenv
-DATABASE_URL=postgresql://blueprint-user:blueprint-password@127.0.0.1:55432/blueprint # Host tools
+DATABASE_URL=postgresql://nimoh-net-user:nimoh-net-password@127.0.0.1:55432/nimoh_net # Host tools
 ```
 
-Local Compose uses fixed development credentials (`blueprint-user` / `blueprint-password`)
-and database name `blueprint`. The host `DATABASE_URL` above matches those defaults.
+Local Compose uses fixed development credentials (`nimoh-net-user` / `nimoh-net-password`)
+and database name `nimoh_net`. The host `DATABASE_URL` above matches those defaults.
 
 ## Run locally
 
@@ -36,16 +36,16 @@ before starting application processes. PostgreSQL restarts do not trigger migrat
 `POSTGRES_USER`, `POSTGRES_PASSWORD`, and `POSTGRES_DB` with deployment values before running it:
 
 ```dotenv
-POSTGRES_USER=blueprint-user   # Deployment database role
+POSTGRES_USER=nimoh-net-user   # Deployment database role
 POSTGRES_PASSWORD=            # Required: replace with a deployment secret
-POSTGRES_DB=blueprint         # Database to initialize
+POSTGRES_DB=nimoh_net         # Database to initialize
 ```
 
 ```bash
-docker build -f db/Dockerfile -t blueprint-database .
-docker run -d --name blueprint-database \
+docker build -f db/Dockerfile -t nimoh-net-database .
+docker run -d --name nimoh-net-database \
   -e POSTGRES_USER -e POSTGRES_PASSWORD -e POSTGRES_DB \
-  -p 127.0.0.1:55432:5432 -v blueprint-pgdata:/var/lib/postgresql/data blueprint-database
+  -p 127.0.0.1:55432:5432 -v nimoh-net-pgdata:/var/lib/postgresql/data nimoh-net-database
 ```
 
 The database variables initialize an empty volume; they do not reconfigure an existing database.
@@ -58,8 +58,8 @@ It needs no web secrets, Redis, mail, or Sentry settings. Builds use the reposit
 Export `DATABASE_URL` with a database address reachable from the container:
 
 ```bash
-docker build -f db/Dockerfile.migrate -t blueprint-migrate .
-docker run --rm --init -e DATABASE_URL blueprint-migrate # Once per deployment, before web/worker
+docker build -f db/Dockerfile.migrate -t nimoh-net-migrate .
+docker run --rm --init -e DATABASE_URL nimoh-net-migrate # Once per deployment, before web/worker
 ```
 
 `docker run -e NAME` reads exported shell values, not root `.env`. Never put application migrations

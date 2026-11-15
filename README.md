@@ -1,6 +1,6 @@
-# Web App Blueprint
+# nimoh.net
 
-A battle tested template for a complete web application.
+A minimal web application for nimoh.net.
 Each part of the app has its own dedicated README file for more info.
 
 Cool stuff included: [TypeScript](https://www.typescriptlang.org/) | [React](https://react.dev/) | [React Router](https://reactrouter.com/) | [PostgreSQL](https://www.postgresql.org/) | [Redis](https://redis.io/) | [Vite](https://vite.dev/) | [Tailwind CSS](https://tailwindcss.com/) | [Drizzle ORM](https://orm.drizzle.team/) | [BullMQ](https://bullmq.io/) | [Headless UI](https://headlessui.com/) | [Motion](https://motion.dev/) | [Zod](https://zod.dev/) | [Heroicons](https://heroicons.com/) | [Lettermint](https://lettermint.co/)
@@ -50,6 +50,11 @@ Requires Node 24+, Git, Make, Docker, and Docker Compose **2.32.2+**.
 npm ci                       # Install host tools and dependencies
 cp .env.example .env         # Create the single local configuration file
 ```
+
+The display name is `nimoh.net`; infrastructure names use `nimoh-net` and the database uses `nimoh_net`.
+When adopting these names for an existing installation, migrate database/storage data and update
+hosted service and secret references before deployment. A renamed Compose project uses separate
+volumes; the previous project’s data is retained until explicitly removed.
 
 Configure the variables in `.env` for your needs; [.env.example](.env.example) documents their
 defaults and requirements. Replace the three secret placeholders with different random values

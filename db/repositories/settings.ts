@@ -12,7 +12,7 @@ export async function getSiteSettings(): Promise<SelectSiteSettings> {
   if (existing) return existing;
 
   return db.transaction(async (tx) => {
-    await tx.execute(sql`SELECT pg_advisory_xact_lock(hashtext('blueprint:site-settings'))`);
+    await tx.execute(sql`SELECT pg_advisory_xact_lock(hashtext('nimoh.net:site-settings'))`);
     const [initialized] = await tx
       .select()
       .from(siteSettings)

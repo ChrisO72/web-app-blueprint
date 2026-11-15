@@ -15,9 +15,9 @@ export function sourceRelease(): string {
       encoding: "utf8",
       stdio: ["ignore", "pipe", "ignore"],
     }).trim();
-    return `blueprint@${sha}${dirty ? "-dirty" : ""}`;
+    return `nimoh.net@${sha}${dirty ? "-dirty" : ""}`;
   } catch {
-    return "blueprint@local";
+    return "nimoh.net@local";
   }
 }
 

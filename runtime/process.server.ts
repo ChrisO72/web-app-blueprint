@@ -42,18 +42,18 @@ export function createProcessController(dependencies: ProcessDependencies) {
 
 // Preload and bundled application code share the same controller.
 const shared = globalThis as typeof globalThis & {
-  __blueprintProcess?: ReturnType<typeof createProcessController>;
-  __blueprintProcessHandlers?: boolean;
+  __nimohNetProcess?: ReturnType<typeof createProcessController>;
+  __nimohNetProcessHandlers?: boolean;
 };
-export const processController = (shared.__blueprintProcess ??= createProcessController({
+export const processController = (shared.__nimohNetProcess ??= createProcessController({
   shutdown,
   report: log.error,
   exit: (code) => process.exit(code),
 }));
 
 export function installProcessHandlers(worker: boolean) {
-  if (shared.__blueprintProcessHandlers) return;
-  shared.__blueprintProcessHandlers = true;
+  if (shared.__nimohNetProcessHandlers) return;
+  shared.__nimohNetProcessHandlers = true;
   for (const event of ["uncaughtException", "unhandledRejection"] as const) {
     process.on(event, (error: unknown) => {
       log.error(event, error);

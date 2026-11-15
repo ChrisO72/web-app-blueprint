@@ -1,15 +1,15 @@
 envVarGroups:
-  - name: web-app-blueprint-node
+  - name: nimoh-net-node
     envVars:
       - key: NODE_VERSION
         value: "24.14.1"
-  - name: web-app-blueprint-shared
+  - name: nimoh-net-shared
     # Configure optional shared env vars (e.g. Lettermint and Sentry) in the Render Dashboard.
     envVars: []
 
 services:
   - type: keyvalue
-    name: web-app-blueprint-queue
+    name: nimoh-net-queue
     plan: starter
     region: frankfurt
     ipAllowList: []
@@ -17,7 +17,7 @@ services:
     persistenceMode: journal-snapshot
 
   - type: web
-    name: web-app-blueprint-storage
+    name: nimoh-net-storage
     runtime: image
     plan: starter
     region: frankfurt
@@ -38,22 +38,22 @@ services:
         # Don't use generateValue here: it can contain a "/", which is used as a separator.
         fromService:
           type: web
-          name: web-app-blueprint-storage
+          name: nimoh-net-storage
           envVarKey: RENDER_SERVICE_ID
       - key: AWS_SECRET_ACCESS_KEY
         generateValue: true
       - key: AWS_DEFAULT_REGION
         value: eu-central-1
       - key: S3_BUCKET
-        value: blueprint-files
+        value: nimoh-net-files
       - key: WEED_S3_ALLOWEDORIGINS
         fromService:
           type: web
-          name: web-app-blueprint-web
+          name: nimoh-net-web
           envVarKey: RENDER_EXTERNAL_URL
 
   - type: web
-    name: web-app-blueprint-web
+    name: nimoh-net-web
     runtime: node
     plan: starter
     region: frankfurt
@@ -61,8 +61,8 @@ services:
     preDeployCommand: npm run db:migrate
     startCommand: npm run start:web
     envVars:
-      - fromGroup: web-app-blueprint-node
-      - fromGroup: web-app-blueprint-shared
+      - fromGroup: nimoh-net-node
+      - fromGroup: nimoh-net-shared
       - key: JWT_SECRET
         generateValue: true
       - key: REFRESH_SECRET
@@ -71,53 +71,53 @@ services:
         generateValue: true
       - key: DATABASE_URL
         fromDatabase:
-          name: web-app-blueprint-db
+          name: nimoh-net-db
           property: connectionString
       - key: REDIS_URL
         fromService:
           type: keyvalue
-          name: web-app-blueprint-queue
+          name: nimoh-net-queue
           property: connectionString
       - key: APP_URL
         fromService:
           type: web
-          name: web-app-blueprint-web
+          name: nimoh-net-web
           envVarKey: RENDER_EXTERNAL_URL
       - key: S3_REGION
         fromService:
           type: web
-          name: web-app-blueprint-storage
+          name: nimoh-net-storage
           envVarKey: AWS_DEFAULT_REGION
       - key: S3_BUCKET
         fromService:
           type: web
-          name: web-app-blueprint-storage
+          name: nimoh-net-storage
           envVarKey: S3_BUCKET
       - key: S3_ENDPOINT
         fromService:
           type: web
-          name: web-app-blueprint-storage
+          name: nimoh-net-storage
           envVarKey: RENDER_EXTERNAL_URL
       - key: S3_PUBLIC_ENDPOINT
         fromService:
           type: web
-          name: web-app-blueprint-storage
+          name: nimoh-net-storage
           envVarKey: RENDER_EXTERNAL_URL
       - key: S3_FORCE_PATH_STYLE
         value: "true"
       - key: S3_ACCESS_KEY_ID
         fromService:
           type: web
-          name: web-app-blueprint-storage
+          name: nimoh-net-storage
           envVarKey: RENDER_SERVICE_ID
       - key: S3_SECRET_ACCESS_KEY
         fromService:
           type: web
-          name: web-app-blueprint-storage
+          name: nimoh-net-storage
           envVarKey: AWS_SECRET_ACCESS_KEY
 
   - type: worker
-    name: web-app-blueprint-worker
+    name: nimoh-net-worker
     runtime: node
     plan: starter
     region: frankfurt
@@ -125,56 +125,56 @@ services:
     startCommand: npm run start:worker
     maxShutdownDelaySeconds: 120
     envVars:
-      - fromGroup: web-app-blueprint-node
-      - fromGroup: web-app-blueprint-shared
+      - fromGroup: nimoh-net-node
+      - fromGroup: nimoh-net-shared
       - key: DATABASE_URL
         fromDatabase:
-          name: web-app-blueprint-db
+          name: nimoh-net-db
           property: connectionString
       - key: REDIS_URL
         fromService:
           type: keyvalue
-          name: web-app-blueprint-queue
+          name: nimoh-net-queue
           property: connectionString
       - key: APP_URL
         fromService:
           type: web
-          name: web-app-blueprint-web
+          name: nimoh-net-web
           envVarKey: RENDER_EXTERNAL_URL
       - key: S3_REGION
         fromService:
           type: web
-          name: web-app-blueprint-storage
+          name: nimoh-net-storage
           envVarKey: AWS_DEFAULT_REGION
       - key: S3_BUCKET
         fromService:
           type: web
-          name: web-app-blueprint-storage
+          name: nimoh-net-storage
           envVarKey: S3_BUCKET
       - key: S3_ENDPOINT
         fromService:
           type: web
-          name: web-app-blueprint-storage
+          name: nimoh-net-storage
           envVarKey: RENDER_EXTERNAL_URL
       - key: S3_PUBLIC_ENDPOINT
         fromService:
           type: web
-          name: web-app-blueprint-storage
+          name: nimoh-net-storage
           envVarKey: RENDER_EXTERNAL_URL
       - key: S3_FORCE_PATH_STYLE
         value: "true"
       - key: S3_ACCESS_KEY_ID
         fromService:
           type: web
-          name: web-app-blueprint-storage
+          name: nimoh-net-storage
           envVarKey: RENDER_SERVICE_ID
       - key: S3_SECRET_ACCESS_KEY
         fromService:
           type: web
-          name: web-app-blueprint-storage
+          name: nimoh-net-storage
           envVarKey: AWS_SECRET_ACCESS_KEY
 
 databases:
-  - name: web-app-blueprint-db
+  - name: nimoh-net-db
     plan: basic-256mb
     region: frankfurt

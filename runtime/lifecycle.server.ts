@@ -18,7 +18,7 @@ export function createLifecycle() {
   };
 }
 const shared = globalThis as typeof globalThis & {
-  __blueprintLifecycle?: ReturnType<typeof createLifecycle>;
+  __nimohNetLifecycle?: ReturnType<typeof createLifecycle>;
 };
-export const lifecycle = (shared.__blueprintLifecycle ??= createLifecycle());
+export const lifecycle = (shared.__nimohNetLifecycle ??= createLifecycle());
 export const registerCleanup = lifecycle.registerCleanup;

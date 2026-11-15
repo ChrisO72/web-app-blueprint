@@ -107,7 +107,7 @@ export default function AdminUsersPage({ loaderData }: Route.ComponentProps) {
         <Heading>
           Users
           {users.length > 0 && (
-            <span className="ml-2 font-normal text-zinc-500 dark:text-zinc-400">
+            <span className="ml-2 text-base font-normal tracking-normal text-zinc-500 dark:text-zinc-400">
               ({users.length} total)
             </span>
           )}
@@ -116,7 +116,7 @@ export default function AdminUsersPage({ loaderData }: Route.ComponentProps) {
 
       <FormError actionData={deleteFetcher.data} />
       {users.length === 0 ? (
-        <div className="rounded-lg bg-zinc-50 py-12 text-center dark:bg-zinc-900">
+        <div className="empty-state">
           <p className="text-zinc-500 dark:text-zinc-400">No users found.</p>
         </div>
       ) : (

@@ -12,13 +12,14 @@ export async function sendConfirmationEmail({ to, token, expiresInHours }: Confi
 
   await sendEmail({
     to,
-    subject: "Confirm your email address",
+    subject: "Confirm your email address · nimoh.net",
     html: [
+      "<p><strong>nimoh.net</strong></p>",
       "<h2>Confirm your email</h2>",
       "<p>Click the link below to confirm your email address:</p>",
       `<p><a href="${confirmUrl}">${confirmUrl}</a></p>`,
       `<p>This link expires in ${expiresInHours} hours.</p>`,
     ].join("\n"),
-    text: `Confirm your email address: ${confirmUrl}\n\nThis link expires in ${expiresInHours} hours.`,
+    text: `nimoh.net\n\nConfirm your email address: ${confirmUrl}\n\nThis link expires in ${expiresInHours} hours.`,
   });
 }

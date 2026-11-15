@@ -12,8 +12,9 @@ export async function sendPasswordResetEmail({ to, token, expiresInHours }: Pass
 
   await sendEmail({
     to,
-    subject: "Reset your password",
+    subject: "Reset your password · nimoh.net",
     html: [
+      "<p><strong>nimoh.net</strong></p>",
       "<h2>Reset your password</h2>",
       "<p>Click the link below to choose a new password:</p>",
       `<p><a href="${resetUrl}">${resetUrl}</a></p>`,
@@ -21,6 +22,8 @@ export async function sendPasswordResetEmail({ to, token, expiresInHours }: Pass
       "<p>If you did not request a password reset, you can ignore this email.</p>",
     ].join("\n"),
     text: [
+      "nimoh.net",
+      "",
       `Reset your password: ${resetUrl}`,
       "",
       `This link expires in ${expiresInHours} hour${expiresInHours === 1 ? "" : "s"}.`,

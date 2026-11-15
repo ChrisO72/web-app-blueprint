@@ -109,12 +109,12 @@ export default function ItemsPage({ loaderData }: Route.ComponentProps) {
   });
 
   return (
-    <div className="flex h-[calc(100vh-8rem)] flex-col lg:h-[calc(100vh-6rem)]">
-      <div className="mb-6 flex shrink-0 items-start justify-between">
+    <div className="flex flex-col">
+      <div className="mb-10 flex shrink-0 flex-wrap items-center justify-between gap-4">
         <Heading>
           Items
           {totalCount > 0 && (
-            <span className="ml-2 font-normal text-zinc-500 dark:text-zinc-400">
+            <span className="ml-2 text-base font-normal tracking-normal text-zinc-500 dark:text-zinc-400">
               ({totalCount} total)
             </span>
           )}
@@ -124,7 +124,7 @@ export default function ItemsPage({ loaderData }: Route.ComponentProps) {
 
       <FormError actionData={deleteFetcher.data} />
       {items.length === 0 ? (
-        <div className="rounded-lg bg-zinc-50 py-12 text-center dark:bg-zinc-900">
+        <div className="empty-state">
           <p className="text-zinc-500 dark:text-zinc-400">No items found.</p>
         </div>
       ) : (

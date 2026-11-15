@@ -30,6 +30,9 @@ example. The [route guide](routes.md#route-module-template) owns the form and va
 ## Styling
 
 - Tailwind v4 tokens live in [app.css](app.css); there is no `tailwind.config.js`.
+- Use [AppFrame](components/app-frame.tsx) for the shared header and footer. Keep pages in the
+  `page-width` column, with text navigation, generous spacing, and subtle dividers. Use
+  `empty-state` for empty lists; avoid decorative cards and shadows.
 - Use `clsx` for conditional class composition.
 - Use `@heroicons/react` icons with `data-slot="icon"` so primitives style them correctly.
 - Use the shared `FormError` and `FieldError` components for action errors; details are in

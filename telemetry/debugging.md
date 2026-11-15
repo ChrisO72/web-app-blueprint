@@ -12,7 +12,7 @@ The endpoint defaults to `https://sentry.io`; `SENTRY_URL` optionally overrides 
 
 ```bash
 npm run sentry -- issue list                 # Find existing issues
-npm run sentry -- issue view BLUEPRINT-1     # Inspect an issue; replace the example ID
+npm run sentry -- issue view NIMOH-1     # Inspect an issue; replace the example ID
 npm run sentry -- event --help              # Event inspection options
 npm run sentry -- trace --help              # Trace inspection options
 npm run sentry -- explore --help            # Query recorded signals

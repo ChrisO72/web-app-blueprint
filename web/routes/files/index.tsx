@@ -129,7 +129,7 @@ export async function action({
   const user = getAuthenticatedUser(context);
 
   if (!isFileStorageEnabled) {
-    return { formError: "Add S3 environment variables to enable files." };
+    return { formError: "Please check back later." };
   }
 
   const formData = await request.formData();
@@ -262,13 +262,11 @@ export default function FilesPage({ loaderData }: Route.ComponentProps) {
     return (
       <div>
         <Heading>Files</Heading>
-        <div className="mt-6 rounded-lg bg-zinc-50 px-6 py-12 text-center dark:bg-zinc-900">
+        <div className="empty-state mt-8">
           <p className="font-medium text-zinc-950 dark:text-white">
             File storage is not configured.
           </p>
-          <p className="mt-2 text-zinc-500 dark:text-zinc-400">
-            Add S3 environment variables to enable files.
-          </p>
+          <p className="mt-2 text-zinc-500 dark:text-zinc-400">Please check back later.</p>
         </div>
       </div>
     );
@@ -277,12 +275,12 @@ export default function FilesPage({ loaderData }: Route.ComponentProps) {
   const { files, page, pageSize, pageSizeOptions, totalCount, totalPages } = loaderData;
 
   return (
-    <div className="flex h-[calc(100vh-8rem)] flex-col lg:h-[calc(100vh-6rem)]">
-      <div className="mb-6 flex shrink-0 items-start justify-between gap-4">
+    <div className="flex flex-col">
+      <div className="mb-10 flex shrink-0 flex-wrap items-center justify-between gap-4">
         <Heading>
           Files
           {totalCount > 0 && (
-            <span className="ml-2 font-normal text-zinc-500 dark:text-zinc-400">
+            <span className="ml-2 text-base font-normal tracking-normal text-zinc-500 dark:text-zinc-400">
               ({totalCount} total)
             </span>
           )}
@@ -293,7 +291,7 @@ export default function FilesPage({ loaderData }: Route.ComponentProps) {
       <FormError actionData={deleteFetcher.data} />
 
       {files.length === 0 ? (
-        <div className="mt-4 rounded-lg bg-zinc-50 py-12 text-center dark:bg-zinc-900">
+        <div className="empty-state mt-4">
           <p className="text-zinc-500 dark:text-zinc-400">No files uploaded yet.</p>
         </div>
       ) : (

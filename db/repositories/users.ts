@@ -28,7 +28,7 @@ export type User = Pick<SelectUser, keyof typeof userColumns>;
 
 export async function registerUser(data: Pick<InsertUser, "email" | "passwordHash" | "firstName">) {
   return db.transaction(async (tx) => {
-    await tx.execute(sql`SELECT pg_advisory_xact_lock(hashtext('blueprint:registration'))`);
+    await tx.execute(sql`SELECT pg_advisory_xact_lock(hashtext('nimoh.net:registration'))`);
     const [{ value }] = await tx.select({ value: count() }).from(users);
     const [organization] = await tx
       .insert(organizations)

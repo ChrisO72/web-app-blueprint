@@ -1,4 +1,4 @@
-import { ChevronLeftIcon, ChevronRightIcon } from "@heroicons/react/20/solid";
+import { useId } from "react";
 import { Link, useSearchParams } from "react-router";
 
 interface PaginationProps {
@@ -43,6 +43,7 @@ export function Pagination({
   pageSizeOptions = DEFAULT_PAGE_SIZE_OPTIONS,
 }: PaginationProps) {
   const [searchParams, setSearchParams] = useSearchParams();
+  const pageSizeId = useId();
 
   const buildPageUrl = (page: number) => {
     const params = new URLSearchParams(searchParams);
@@ -59,138 +60,85 @@ export function Pagination({
 
   if (totalPages <= 1 && pageSizeOptions.length <= 1) return null;
 
-  const startItem = (currentPage - 1) * limit + 1;
+  const startItem = totalCount === 0 ? 0 : (currentPage - 1) * limit + 1;
   const endItem = Math.min(currentPage * limit, totalCount);
   const pageNumbers = getPageNumbers(currentPage, totalPages);
 
-  const basePageClass =
-    "relative inline-flex items-center px-4 py-2 text-sm font-semibold focus:z-20 focus:outline-offset-0";
-  const currentPageClass =
-    "z-10 bg-gray-900 border-2 border-gray-900 text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-900 dark:bg-white dark:border-white dark:text-gray-900";
-  const defaultPageClass =
-    "text-gray-900 inset-ring inset-ring-gray-300 hover:bg-gray-50 dark:text-gray-200 dark:inset-ring-gray-700 dark:hover:bg-white/5";
-  const ellipsisClass =
-    "text-gray-700 inset-ring inset-ring-gray-300 dark:text-gray-400 dark:inset-ring-gray-700";
-  const arrowClass =
-    "relative inline-flex items-center px-2 py-2 text-gray-400 inset-ring inset-ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0 dark:inset-ring-gray-700 dark:hover:bg-white/5";
-  const disabledArrowClass =
-    "relative inline-flex items-center px-2 py-2 text-gray-300 inset-ring inset-ring-gray-300 cursor-not-allowed dark:text-gray-600 dark:inset-ring-gray-700";
-
   return (
-    <div className="flex items-center justify-between border-t border-gray-200 bg-white px-4 py-3 sm:px-6 dark:border-white/10 dark:bg-transparent">
-      {/* Mobile view */}
-      <div className="flex flex-1 justify-between sm:hidden">
-        {currentPage > 1 ? (
-          <Link
-            to={buildPageUrl(currentPage - 1)}
-            className="relative inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-white/10 dark:bg-white/5 dark:text-gray-200 dark:hover:bg-white/10"
+    <div className="mt-8 flex flex-wrap items-center justify-between gap-x-6 gap-y-4 border-t border-zinc-200 pt-6 text-sm dark:border-zinc-800">
+      <p className="text-zinc-500 dark:text-zinc-400">
+        {startItem}–{endItem} of {totalCount} results
+      </p>
+      <div className="flex flex-wrap items-center gap-6">
+        <div className="flex items-center gap-2">
+          <label htmlFor={pageSizeId} className="text-zinc-500 dark:text-zinc-400">
+            Per page
+          </label>
+          <select
+            id={pageSizeId}
+            value={limit}
+            onChange={(event) => handlePageSizeChange(Number(event.target.value))}
+            className="rounded-md border border-zinc-200 bg-transparent px-2 py-2 dark:border-zinc-700"
           >
-            Previous
-          </Link>
-        ) : (
-          <span className="relative inline-flex cursor-not-allowed items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-400 dark:border-white/10 dark:bg-white/5 dark:text-gray-500">
-            Previous
-          </span>
-        )}
-        {currentPage < totalPages ? (
-          <Link
-            to={buildPageUrl(currentPage + 1)}
-            className="relative ml-3 inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-white/10 dark:bg-white/5 dark:text-gray-200 dark:hover:bg-white/10"
-          >
-            Next
-          </Link>
-        ) : (
-          <span className="relative ml-3 inline-flex cursor-not-allowed items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-400 dark:border-white/10 dark:bg-white/5 dark:text-gray-500">
-            Next
-          </span>
-        )}
-      </div>
-
-      {/* Desktop view */}
-      <div className="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
-        <div>
-          <p className="text-sm text-gray-700 dark:text-gray-300">
-            Showing <span className="font-medium">{startItem}</span> to{" "}
-            <span className="font-medium">{endItem}</span> of{" "}
-            <span className="font-medium">{totalCount}</span> results
-          </p>
+            {pageSizeOptions.map((size) => (
+              <option key={size} value={size} className="bg-white dark:bg-zinc-900">
+                {size}
+              </option>
+            ))}
+          </select>
         </div>
-        <div className="flex items-center gap-4">
-          {/* Page size selector */}
-          <div className="flex items-center gap-2">
-            <label htmlFor="page-size" className="text-sm text-gray-700 dark:text-gray-300">
-              Items per page:
-            </label>
-            <select
-              id="page-size"
-              value={limit}
-              onChange={(e) => handlePageSizeChange(Number(e.target.value))}
-              className="rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 inset-ring inset-ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0 dark:bg-transparent dark:text-gray-200 dark:inset-ring-gray-700 dark:hover:bg-white/5"
-            >
-              {pageSizeOptions.map((size) => (
-                <option key={size} value={size} className="dark:bg-zinc-800">
-                  {size}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {totalPages > 1 && (
-            <nav
-              aria-label="Pagination"
-              className="isolate inline-flex -space-x-px rounded-md shadow-xs dark:shadow-none"
-            >
-              {/* Previous arrow */}
-              {currentPage > 1 ? (
-                <Link to={buildPageUrl(currentPage - 1)} className={`${arrowClass} rounded-l-md`}>
-                  <span className="sr-only">Previous</span>
-                  <ChevronLeftIcon aria-hidden="true" className="size-5" />
-                </Link>
-              ) : (
-                <span className={`${disabledArrowClass} rounded-l-md`}>
-                  <span className="sr-only">Previous</span>
-                  <ChevronLeftIcon aria-hidden="true" className="size-5" />
-                </span>
-              )}
-
-              {/* Page numbers */}
-              {pageNumbers.map((pageNum, index) => {
-                if (pageNum === "ellipsis") {
-                  return (
-                    <span key={`ellipsis-${index}`} className={`${basePageClass} ${ellipsisClass}`}>
-                      ...
-                    </span>
-                  );
-                }
-
-                const isCurrentPage = pageNum === currentPage;
-                return (
+        {totalPages > 1 && (
+          <nav aria-label="Pagination" className="flex items-center gap-1">
+            {currentPage > 1 ? (
+              <Link
+                to={buildPageUrl(currentPage - 1)}
+                className="nav-link px-2"
+                aria-label="Previous page"
+              >
+                ← Previous
+              </Link>
+            ) : (
+              <span aria-disabled="true" className="px-2 text-zinc-400 dark:text-zinc-600">
+                ← Previous
+              </span>
+            )}
+            <div className="hidden items-center sm:flex">
+              {pageNumbers.map((page, index) =>
+                page === "ellipsis" ? (
+                  <span key={`ellipsis-${index}`} className="px-2 text-zinc-400">
+                    …
+                  </span>
+                ) : (
                   <Link
-                    key={pageNum}
-                    to={buildPageUrl(pageNum)}
-                    aria-current={isCurrentPage ? "page" : undefined}
-                    className={`${basePageClass} ${isCurrentPage ? currentPageClass : defaultPageClass}`}
+                    key={page}
+                    to={buildPageUrl(page)}
+                    aria-label={`Page ${page}`}
+                    aria-current={page === currentPage ? "page" : undefined}
+                    className="nav-link min-w-9 justify-center px-2 aria-[current=page]:underline aria-[current=page]:underline-offset-4"
                   >
-                    {pageNum}
+                    {page}
                   </Link>
-                );
-              })}
-
-              {/* Next arrow */}
-              {currentPage < totalPages ? (
-                <Link to={buildPageUrl(currentPage + 1)} className={`${arrowClass} rounded-r-md`}>
-                  <span className="sr-only">Next</span>
-                  <ChevronRightIcon aria-hidden="true" className="size-5" />
-                </Link>
-              ) : (
-                <span className={`${disabledArrowClass} rounded-r-md`}>
-                  <span className="sr-only">Next</span>
-                  <ChevronRightIcon aria-hidden="true" className="size-5" />
-                </span>
+                ),
               )}
-            </nav>
-          )}
-        </div>
+            </div>
+            <span className="px-2 text-zinc-500 sm:hidden">
+              {currentPage} / {totalPages}
+            </span>
+            {currentPage < totalPages ? (
+              <Link
+                to={buildPageUrl(currentPage + 1)}
+                className="nav-link px-2"
+                aria-label="Next page"
+              >
+                Next →
+              </Link>
+            ) : (
+              <span aria-disabled="true" className="px-2 text-zinc-400 dark:text-zinc-600">
+                Next →
+              </span>
+            )}
+          </nav>
+        )}
       </div>
     </div>
   );

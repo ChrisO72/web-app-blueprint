@@ -11,7 +11,7 @@ ENV NODE_ENV=development SENTRY_SERVICE=worker
 CMD ["node", "--conditions=development", "--import", "tsx", "--import", "./telemetry/register.server.ts", "worker/index.ts"]
 
 FROM development AS build
-ARG SENTRY_RELEASE=blueprint@local
+ARG SENTRY_RELEASE=nimoh.net@local
 RUN SENTRY_RELEASE="$SENTRY_RELEASE" npm run build:worker
 
 FROM node:24-bookworm-slim AS production

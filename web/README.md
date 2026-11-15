@@ -15,7 +15,7 @@ node -e "console.log(require('crypto').randomBytes(48).toString('hex'))" # Run o
 Set these in the root `.env`; replace each secret placeholder with a different generated value:
 
 ```dotenv
-DATABASE_URL=postgresql://blueprint-user:blueprint-password@127.0.0.1:55432/blueprint # Host database
+DATABASE_URL=postgresql://nimoh-net-user:nimoh-net-password@127.0.0.1:55432/nimoh_net # Host database
 REDIS_URL=redis://localhost:6379       # Host queue and rate-limit store
 APP_URL=http://localhost:5173         # Public web origin
 JWT_SECRET=                          # Required: random value, at least 32 characters
@@ -63,8 +63,8 @@ root as build context. Production runs as the non-root Node user, with telemetry
 Builds require no application secrets, running infrastructure, or Sentry credentials.
 
 ```bash
-export SENTRY_RELEASE=blueprint@your-release # Use the same identifier for web and worker
-docker build --target production --build-arg SENTRY_RELEASE -f web/Dockerfile -t blueprint-web .
+export SENTRY_RELEASE=nimoh.net@your-release # Use the same identifier for web and worker
+docker build --target production --build-arg SENTRY_RELEASE -f web/Dockerfile -t nimoh-net-web .
 ```
 
 Provision PostgreSQL and Redis, then run [database migrations](../db/README.md#production) before
@@ -75,7 +75,7 @@ is the public origin, and database/Redis addresses must be reachable from the co
 ```bash
 docker run -d --init --stop-timeout 30 -p 127.0.0.1:3000:3000 \
   -e DATABASE_URL -e REDIS_URL -e APP_URL \
-  -e JWT_SECRET -e REFRESH_SECRET -e RATE_LIMIT_KEY_SECRET blueprint-web
+  -e JWT_SECRET -e REFRESH_SECRET -e RATE_LIMIT_KEY_SECRET nimoh-net-web
 ```
 
 Add `-e NAME` for optional integration settings when enabled. Web and worker must share the same

@@ -12,7 +12,7 @@ EXPOSE 5173
 CMD ["node", "--conditions=development", "--import", "tsx", "--import", "./telemetry/register.server.ts", "./node_modules/@react-router/dev/bin.cjs", "dev"]
 
 FROM development AS build
-ARG SENTRY_RELEASE=blueprint@local
+ARG SENTRY_RELEASE=nimoh.net@local
 RUN SENTRY_RELEASE="$SENTRY_RELEASE" npm run build:web
 
 FROM node:24-bookworm-slim AS production

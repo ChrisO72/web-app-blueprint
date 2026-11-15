@@ -15,7 +15,7 @@ cp .env.example .env         # First setup only; preserve an existing .env
 Required by the worker and its jobs, in root `.env`:
 
 ```dotenv
-DATABASE_URL=postgresql://blueprint-user:blueprint-password@127.0.0.1:55432/blueprint # Host database
+DATABASE_URL=postgresql://nimoh-net-user:nimoh-net-password@127.0.0.1:55432/nimoh_net # Host database
 REDIS_URL=redis://localhost:6379       # Host queue store
 APP_URL=http://localhost:5173         # Web origin for email links
 ```
@@ -59,8 +59,8 @@ repository root. Production runs as the non-root Node user, with telemetry prelo
 Builds require no application secrets, running infrastructure, or Sentry credentials.
 
 ```bash
-export SENTRY_RELEASE=blueprint@your-release # Match the web image's release identifier
-docker build --target production --build-arg SENTRY_RELEASE -f worker/Dockerfile -t blueprint-worker .
+export SENTRY_RELEASE=nimoh.net@your-release # Match the web image's release identifier
+docker build --target production --build-arg SENTRY_RELEASE -f worker/Dockerfile -t nimoh-net-worker .
 ```
 
 Provision PostgreSQL and Redis and apply [migrations](../db/README.md#production) first. Export the
@@ -70,7 +70,7 @@ and queues, reachable from their containers; `APP_URL` is the public web origin.
 
 ```bash
 docker run -d --init --stop-timeout 30 \
-  -e DATABASE_URL -e REDIS_URL -e APP_URL blueprint-worker
+  -e DATABASE_URL -e REDIS_URL -e APP_URL nimoh-net-worker
 ```
 
 Add `-e NAME` for enabled mail, storage, and telemetry settings. Hosting is supplied by the adopting project.

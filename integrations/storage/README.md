@@ -11,12 +11,12 @@ Set these in root `.env` for local SeaweedFS:
 
 ```dotenv
 S3_REGION=eu-central-1                # Bucket region
-S3_BUCKET=blueprint-files             # Unset to disable the files feature
+S3_BUCKET=nimoh-net-files             # Unset to disable the files feature
 S3_ENDPOINT=http://127.0.0.1:8333      # Host access to SeaweedFS
 S3_PUBLIC_ENDPOINT=http://127.0.0.1:8333 # Browser-reachable signing endpoint
 S3_FORCE_PATH_STYLE=true              # Path-style access for local SeaweedFS
-S3_ACCESS_KEY_ID=blueprint-access-key  # Local credentials; set both key fields together
-S3_SECRET_ACCESS_KEY=blueprint-secret-key
+S3_ACCESS_KEY_ID=nimoh-net-access-key  # Local credentials; set both key fields together
+S3_SECRET_ACCESS_KEY=nimoh-net-secret-key
 APP_URL=http://localhost:5173         # Allowed local browser origin
 ```
 
@@ -25,7 +25,7 @@ Compose supplies `http://storage:8333` for server operations while keeping the b
 reachable from the host. `S3_PUBLIC_ENDPOINT` defaults to `S3_ENDPOINT` when absent.
 
 Compose maps the local key pair to SeaweedFS's AWS credential settings and creates `S3_BUCKET`
-on startup, falling back to `blueprint-files` for storage initialization when it is unset.
+on startup, falling back to `nimoh-net-files` for storage initialization when it is unset.
 Omitting `S3_BUCKET` still disables the app's files feature. No anonymous access is configured.
 
 ## Run locally
@@ -49,9 +49,9 @@ along with PostgreSQL and Redis data; separate Sentry data is preserved.
 
 ### Render
 
-The root [Render Blueprint](../../render.yaml) includes `web-app-blueprint-storage`, using the
+The root [Render Blueprint](../../render.yaml) includes `nimoh-net-storage`, using the
 same pinned SeaweedFS image and `mini` mode as local development. It creates the private
-`blueprint-files` bucket, generates credentials, and supplies all S3 settings to web and worker.
+`nimoh-net-files` bucket, generates credentials, and supplies all S3 settings to web and worker.
 The 10 GB persistent disk at `/data` stores both objects and metadata across deploys; increase
 `disk.sizeGB` in the Blueprint as storage grows.
 
@@ -87,7 +87,7 @@ Configure direct uploads with the exact production application origin:
 ```json
 [
   {
-    "AllowedOrigins": ["https://your-app.example"],
+    "AllowedOrigins": ["https://nimoh.net"],
     "AllowedMethods": ["POST"],
     "AllowedHeaders": ["*"],
     "MaxAgeSeconds": 3600

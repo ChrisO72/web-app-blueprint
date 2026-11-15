@@ -79,12 +79,12 @@ export function ThemeToggle({
               }}
               aria-label={`${label} theme${theme === value ? ", selected" : ""}`}
               title={label}
-              className="relative z-10 flex size-7 items-center justify-center rounded-md text-zinc-500 transition-colors hover:text-zinc-950 focus:outline-hidden data-focus:text-zinc-950 data-focus:outline-2 data-focus:outline-offset-2 data-focus:outline-blue-500 dark:text-zinc-400 dark:hover:text-white dark:data-focus:text-white"
+              className="relative z-10 flex size-7 items-center justify-center rounded-md text-zinc-500 transition-colors hover:text-zinc-950 focus:outline-hidden data-focus:text-zinc-950 data-focus:outline-2 data-focus:outline-offset-2 data-focus:outline-zinc-500 dark:text-zinc-400 dark:hover:text-white dark:data-focus:text-white"
             >
               {theme === value && (
                 <motion.span
                   layoutId={`theme-indicator-${id}`}
-                  className="absolute inset-0 rounded-md bg-white shadow-sm ring-1 ring-zinc-950/5 dark:bg-zinc-800 dark:ring-white/10"
+                  className="absolute inset-0 rounded-md bg-white ring-1 ring-zinc-950/5 dark:bg-zinc-800 dark:ring-white/10"
                   transition={{ type: "spring", duration: 0.25, bounce: 0.15 }}
                 />
               )}

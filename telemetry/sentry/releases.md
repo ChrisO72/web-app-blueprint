@@ -18,8 +18,8 @@ before uploading. Upload the exact artifacts shipped in that image, not a separa
 
 Set the same `SENTRY_RELEASE` build argument for both production images. Host `npm run build`
 resolves one identifier and passes it to both builds. Individual host builds derive
-`blueprint@<git-sha>` (with `-dirty` for working changes) unless explicitly supplied; container builds
-default to `blueprint@local`. Each build writes `build/<service>/release.json`; production startup
+`nimoh.net@<git-sha>` (with `-dirty` for working changes) unless explicitly supplied; container builds
+default to `nimoh.net@local`. Each build writes `build/<service>/release.json`; production startup
 reads that identifier without Git. An explicit runtime `SENTRY_RELEASE` overrides it and must match
 the uploaded artifacts. `make dev` passes a host-derived identifier into both containers.
 SDK configuration changes require a restart.
