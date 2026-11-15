@@ -59,8 +59,9 @@ return { count, ttl }
 `;
 
 let redisClient: Redis | undefined;
+let redisConnection: Promise<void> | undefined;
 
-function getRedisClient(): Redis {
+async function getRedisClient(): Promise<Redis> {
   if (!redisClient) {
     redisClient = new Redis(env.REDIS_URL, {
       connectTimeout: 1_000,
@@ -71,19 +72,19 @@ function getRedisClient(): Redis {
     redisClient.on("error", () => undefined);
     const client = redisClient;
     registerCleanup(() => client.disconnect());
+    redisConnection = client.connect().finally(() => {
+      redisConnection = undefined;
+    });
   }
 
+  await redisConnection;
   return redisClient;
 }
 
 const redisRateLimitStore: RateLimitStore = {
   async increment(key, windowSeconds) {
-    const result: unknown = await getRedisClient().eval(
-      INCREMENT_SCRIPT,
-      1,
-      key,
-      windowSeconds.toString(),
-    );
+    const client = await getRedisClient();
+    const result: unknown = await client.eval(INCREMENT_SCRIPT, 1, key, windowSeconds.toString());
 
     if (
       !Array.isArray(result) ||
