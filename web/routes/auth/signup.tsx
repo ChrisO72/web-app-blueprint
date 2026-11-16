@@ -9,18 +9,19 @@ import { Heading } from "~/web/components/ui-kit/heading";
 import { Input } from "~/web/components/ui-kit/input";
 import { Strong, Text, TextLink } from "~/web/components/ui-kit/text";
 import { getSiteSettings } from "~/db/repositories/settings";
-import { getUserByEmail } from "~/db/repositories/users";
+import { getUserByEmail, convertGuest } from "~/db/repositories/users";
 import {
   CONFIRMATION_TOKEN_EXPIRY_HOURS,
   createEmailConfirmationToken,
   deleteEmailConfirmationToken,
 } from "~/web/lib/auth/email-confirmation.server";
+import { hashPassword } from "~/web/lib/auth/password.server";
 import { createUserWithPassword } from "~/web/lib/auth/registration.server";
-import { createTokens, verifyAccessToken } from "~/web/lib/auth/tokens.server";
+import { createTokens } from "~/web/lib/auth/tokens.server";
 import { parseForm, type ActionData } from "~/web/lib/form";
 import { checkAuthRateLimit, createRateLimitResponse } from "~/web/lib/rate-limit.server";
 import { isEmailConfigured } from "~/integrations/mail/client.server";
-import { readAccessTokenCookie, setAuthCookies } from "~/web/lib/session.server";
+import { readSessionUser, setAuthCookies } from "~/web/lib/session.server";
 import { enqueueConfirmationEmailJob } from "~/worker/jobs/send-confirmation-email";
 import type { Route } from "./+types/signup";
 
@@ -31,10 +32,8 @@ const signupSchema = z.object({
 });
 
 export async function loader({ request }: Route.LoaderArgs) {
-  const accessToken = await readAccessTokenCookie(request);
-  if (accessToken && verifyAccessToken(accessToken)) {
-    return redirect("/");
-  }
+  const current = await readSessionUser(request);
+  if (current && !current.isGuest) return redirect("/");
 
   const settings = await getSiteSettings();
   return { signupEnabled: settings.signupEnabled };
@@ -71,7 +70,30 @@ export async function action({ request }: Route.ActionArgs): Promise<ActionData 
     return { fieldErrors: { email: ["An account with this email already exists"] } };
   }
 
-  const user = await createUserWithPassword(email, password, firstname);
+  const current = await readSessionUser(request);
+  if (current && !current.isGuest) return redirect("/");
+  let user;
+  try {
+    user = current?.isGuest
+      ? await convertGuest(current.id, current.organizationId, {
+          email,
+          passwordHash: await hashPassword(password),
+          firstName: firstname || null,
+        })
+      : await createUserWithPassword(email, password, firstname);
+  } catch (error) {
+    if (
+      error &&
+      typeof error === "object" &&
+      "cause" in error &&
+      error.cause &&
+      typeof error.cause === "object" &&
+      "code" in error.cause &&
+      error.cause.code === "23505"
+    )
+      return { fieldErrors: { email: ["An account with this email already exists"] } };
+    throw error;
+  }
 
   if (isEmailConfigured && settings.requireMailConfirmation) {
     const token = await createEmailConfirmationToken(user.id);
@@ -90,7 +112,7 @@ export async function action({ request }: Route.ActionArgs): Promise<ActionData 
     return redirect(`/check-email?email=${encodeURIComponent(email)}`);
   }
 
-  const { accessToken, refreshToken } = await createTokens(user.id, user.email);
+  const { accessToken, refreshToken } = await createTokens(user.id);
   const cookies = await setAuthCookies(accessToken, refreshToken);
 
   return redirect("/", {

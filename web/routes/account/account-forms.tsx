@@ -70,7 +70,7 @@ export function PersonalDetailsForm({ user }: { user: AvatarUser }) {
           </Field>
           <Field>
             <Label>Email address</Label>
-            <Input type="email" value={user.email} readOnly autoComplete="email" />
+            <Input type="email" value={user.email ?? ""} readOnly autoComplete="email" />
           </Field>
           <div className="flex justify-end">
             <Button type="submit" disabled={busy}>

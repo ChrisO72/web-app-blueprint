@@ -24,15 +24,18 @@ export function ItemsHeader({ onCreate }: ItemsHeaderProps) {
 }
 ```
 
-Use [routes/items/index.tsx](routes/items/index.tsx) for the table, pagination, and action-menu
-example. The [route guide](routes.md#route-module-template) owns the form and validation template.
+Use [components/create-site-dialog.tsx](components/create-site-dialog.tsx) for a dialog form example. The [route guide](routes.md#route-module-template) owns the form and validation template.
 
 ## Styling
 
 - Tailwind v4 tokens live in [app.css](app.css); there is no `tailwind.config.js`.
-- Use [AppFrame](components/app-frame.tsx) for the shared header and footer. Keep pages in the
-  `page-width` column, with text navigation, generous spacing, and subtle dividers. Use
-  `empty-state` for empty lists; avoid decorative cards and shadows.
+- Use [SidebarLayout](components/ui-kit/sidebar-layout.tsx) for the application shell and
+  [AuthLayout](components/ui-kit/auth-layout.tsx) for authentication pages.
+- The sidebar header selects a Site within the current organization. Site views (Overview,
+  Health, I/O, Activity, and Wiki) stay in the sidebar beneath it, with the first Site selected
+  outside Site routes. Add a Site in a dialog from the bottom of the selector dropdown.
+- Use `Navbar` and `NavbarItem` for page filters, `Table` for record lists, and `Badge` for statuses.
+  Keep empty states centered in a rounded `bg-zinc-50 dark:bg-zinc-900` container.
 - Use `clsx` for conditional class composition.
 - Use `@heroicons/react` icons with `data-slot="icon"` so primitives style them correctly.
 - Use the shared `FormError` and `FieldError` components for action errors; details are in

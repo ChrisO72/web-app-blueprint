@@ -1,5 +1,6 @@
 import {
   type AnyPgColumn,
+  boolean,
   index,
   integer,
   pgTable,
@@ -15,7 +16,8 @@ import { files } from "./files";
 export const users = pgTable("users", {
   id: integer().primaryKey().generatedAlwaysAsIdentity(),
   ...timestamps,
-  email: varchar({ length: 255 }).notNull().unique(),
+  email: varchar({ length: 255 }).unique(),
+  isGuest: boolean("is_guest").notNull().default(false),
   passwordHash: varchar("password_hash", { length: 255 }),
   firstName: varchar("first_name", { length: 100 }),
   lastName: varchar("last_name", { length: 100 }),

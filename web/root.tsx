@@ -21,9 +21,13 @@ export function loader() {
 
 export function meta() {
   return [
-    { title: "nimoh.net" },
-    { name: "description", content: "A simple space for your files, ideas, and everyday work." },
-    { property: "og:site_name", content: "nimoh.net" },
+    { title: "Site · Understand, improve, operate" },
+    {
+      name: "description",
+      content:
+        "A shared workspace for understanding, improving, and operating software with AI agents.",
+    },
+    { property: "og:site_name", content: "Site" },
   ];
 }
 
@@ -99,12 +103,9 @@ export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {
   }
 
   return (
-    <main className="page-width py-20">
-      <a href="/" className="text-lg font-semibold tracking-tight">
-        nimoh.net
-      </a>
-      <h1 className="mt-16 text-3xl font-semibold tracking-tight">{message}</h1>
-      <p className="mt-4 text-zinc-500 dark:text-zinc-400">{details}</p>
+    <main className="container mx-auto p-4 pt-16">
+      <h1>{message}</h1>
+      <p>{details}</p>
       {stack && (
         <pre className="w-full overflow-x-auto p-4">
           <code>{stack}</code>

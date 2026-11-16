@@ -5,12 +5,12 @@ import { Avatar } from "./ui-kit/avatar";
 export type AvatarUser = {
   firstName: string | null;
   lastName: string | null;
-  email: string;
+  email: string | null;
   avatarFileId: number | null;
 };
 
 export function getDisplayName(user: AvatarUser) {
-  return [user.firstName, user.lastName].filter(Boolean).join(" ") || user.email;
+  return [user.firstName, user.lastName].filter(Boolean).join(" ") || user.email || "Guest";
 }
 
 export function UserAvatar({ user, className }: { user: AvatarUser; className?: string }) {
@@ -20,7 +20,9 @@ export function UserAvatar({ user, className }: { user: AvatarUser; className?: 
     [user.firstName, user.lastName]
       .filter(Boolean)
       .map((name) => name?.[0])
-      .join("") || user.email.slice(0, 2);
+      .join("") ||
+    user.email?.slice(0, 2) ||
+    "G";
   return (
     <span
       className={clsx(

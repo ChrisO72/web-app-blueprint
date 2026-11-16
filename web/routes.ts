@@ -15,11 +15,8 @@ export default [
     index("routes/home.tsx"),
     route("account", "routes/account/index.tsx"),
     route("account/avatar", "routes/account/avatar.ts"),
-    route("files", "routes/files/index.tsx"),
-    route("files/:fileId/download", "routes/files/download.ts"),
-    route("files/:fileId/preview", "routes/files/preview.ts"),
-    route("items", "routes/items/index.tsx"),
-    route("items/:item", "routes/items/item.tsx"),
+    route("sites/new", "routes/sites/new.ts"),
+    route("sites/:siteId/:view?/:number?", "routes/sites/workspace.tsx"),
     layout("routes/admin/layout.tsx", [
       route("admin", "routes/admin/index.tsx"),
       route("admin/users", "routes/admin/users.tsx"),

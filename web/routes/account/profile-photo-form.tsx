@@ -37,7 +37,10 @@ export function ProfilePhotoForm({
 
   return (
     <div className="border-b border-zinc-950/10 dark:border-white/10">
-      <SettingsRow title="Profile photo" description="Choose a photo to personalize your account.">
+      <SettingsRow
+        title="Profile photo"
+        description="Choose a photo from your computer to personalize your account."
+      >
         <div className="flex flex-wrap items-center gap-6">
           <UserAvatar user={user} className="size-20" />
           {storageEnabled && (
@@ -225,7 +228,9 @@ function ProfilePhotoDialog({
   return (
     <Dialog open onClose={closeDialog}>
       <DialogTitle>{hasPhoto ? "Change profile photo" : "Set profile photo"}</DialogTitle>
-      <DialogDescription>Choose a JPEG, PNG, or WebP image up to 5 MiB.</DialogDescription>
+      <DialogDescription>
+        Choose a JPEG, PNG, or WebP image from your computer, up to 5 MiB.
+      </DialogDescription>
       <DialogBody>
         <form
           id={inputId}
@@ -244,11 +249,12 @@ function ProfilePhotoDialog({
             }
           />
           <Field>
-            <Label htmlFor={`${inputId}-file`}>Choose a photo</Label>
+            <Label htmlFor={`${inputId}-file`}>Choose a photo from your computer</Label>
             <input
               id={`${inputId}-file`}
               ref={inputRef}
               type="file"
+              name="photo"
               accept={AVATAR_CONTENT_TYPES.join(",")}
               disabled={busy}
               onChange={() => {

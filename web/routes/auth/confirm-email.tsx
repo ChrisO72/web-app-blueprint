@@ -20,7 +20,7 @@ export async function loader({ request }: Route.LoaderArgs) {
     return { error: "This confirmation link is invalid or has expired." };
   }
 
-  const { accessToken, refreshToken } = await createTokens(user.id, user.email);
+  const { accessToken, refreshToken } = await createTokens(user.id);
   const cookies = await setAuthCookies(accessToken, refreshToken);
 
   return redirect("/", {

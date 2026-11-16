@@ -7,7 +7,7 @@ export default defineConfig({
     "./db/schema/organizations.ts",
     "./db/schema/auth.ts",
     "./db/schema/files.ts",
-    "./db/schema/items.ts",
+    "./db/schema/sites.ts",
     "./db/schema/settings.ts",
   ],
   dialect: "postgresql",

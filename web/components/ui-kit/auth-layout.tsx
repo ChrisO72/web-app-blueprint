@@ -1,12 +1,11 @@
 import type React from 'react'
-import { AppFrame } from '../app-frame'
 
 export function AuthLayout({ children }: { children: React.ReactNode }) {
   return (
-    <AppFrame>
-      <main id="main" tabIndex={-1} className="page-width flex flex-1 items-start justify-center py-16 outline-none sm:py-24">
+    <main className="flex min-h-dvh flex-col p-2">
+      <div className="flex grow items-center justify-center p-6 lg:rounded-lg lg:bg-white lg:p-10 lg:shadow-xs lg:ring-1 lg:ring-zinc-950/5 dark:lg:bg-zinc-900 dark:lg:ring-white/10">
         {children}
-      </main>
-    </AppFrame>
+      </div>
+    </main>
   )
 }

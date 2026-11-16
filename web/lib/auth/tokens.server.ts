@@ -13,8 +13,8 @@ export const ACCESS_TOKEN_MAX_AGE = 15 * 60;
 export const REFRESH_TOKEN_MAX_AGE = 7 * 24 * 60 * 60;
 export const REFRESH_TOKEN_GRACE_MS = 10_000;
 
-export function generateAccessToken(userId: number, email: string): string {
-  return jwt.sign({ userId, email }, JWT_SECRET, {
+export function generateAccessToken(userId: number): string {
+  return jwt.sign({ userId }, JWT_SECRET, {
     expiresIn: ACCESS_TOKEN_MAX_AGE,
   });
 }
@@ -33,9 +33,9 @@ export function generateRefreshToken(
   );
 }
 
-export function verifyAccessToken(token: string): { userId: number; email: string } | null {
+export function verifyAccessToken(token: string): { userId: number } | null {
   try {
-    return jwt.verify(token, JWT_SECRET) as { userId: number; email: string };
+    return jwt.verify(token, JWT_SECRET) as { userId: number };
   } catch {
     return null;
   }
@@ -55,8 +55,8 @@ export function hashRefreshToken(token: string): string {
   return crypto.createHash("sha256").update(token).digest("hex");
 }
 
-export async function createTokens(userId: number, email: string) {
-  const accessToken = generateAccessToken(userId, email);
+export async function createTokens(userId: number) {
+  const accessToken = generateAccessToken(userId);
   const { refreshToken, record } = prepareRefreshToken(userId);
   await insertRefreshToken(record);
 
@@ -75,7 +75,7 @@ export async function refreshAccessToken(token: string) {
   if (!user) return null;
 
   if (!stored.tokenId || !stored.issuedAt) return null;
-  const accessToken = generateAccessToken(user.id, user.email);
+  const accessToken = generateAccessToken(user.id);
   const refreshToken = generateRefreshToken(user.id, stored.tokenId, stored.issuedAt);
 
   return { accessToken, refreshToken, user };

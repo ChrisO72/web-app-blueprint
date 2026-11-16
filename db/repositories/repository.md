@@ -5,14 +5,14 @@ organization scope from the authenticated caller rather than reading it from glo
 
 ## Organization-scoped CRUD
 
-This example follows the API in [items.ts](items.ts). Callers validate and select writable fields
+This illustrates the pattern for a new domain module. Callers validate and select writable fields
 before passing data. Set insert ownership from the authenticated user, and never allow browser
 input to change `organizationId`, timestamps, or other protected fields.
 
 ```ts
 import { and, eq, isNull } from "drizzle-orm";
 import { db } from "../db";
-import { type InsertItem, items } from "../schema/items";
+import { type InsertItem, items } from "../schema/examples";
 
 export async function createItem(item: InsertItem) {
   return db.insert(items).values(item).returning();
@@ -60,3 +60,6 @@ export async function listItemsByOrg(organizationId: number) {
 - Keep functions small and add relationship helpers only as needed.
 
 See [schema.md](../schema.md) before changing tables, timestamps, or indexes.
+
+Site workflow queries also scope by `siteId` after verifying the Site belongs to the organization.
+Workflow writes lock the issue and reject stale versions before changing related records.

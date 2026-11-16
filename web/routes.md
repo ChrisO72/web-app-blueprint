@@ -11,7 +11,10 @@ import { type RouteConfig, index, layout, route } from "@react-router/dev/routes
 
 export default [
   route("login", "routes/auth/login.tsx"),
-  layout("routes/layout.tsx", [index("routes/home.tsx"), route("items", "routes/items/index.tsx")]),
+  layout("routes/layout.tsx", [
+    index("routes/home.tsx"),
+    route("sites/new", "routes/sites/new.ts"),
+  ]),
 ] satisfies RouteConfig;
 ```
 
@@ -29,9 +32,9 @@ import { Field, Label } from "~/web/components/ui-kit/fieldset";
 import { Input } from "~/web/components/ui-kit/input";
 import { getAuthenticatedUser } from "~/web/lib/session.server";
 import { parseForm, type ActionData } from "~/web/lib/form";
-import { createItem } from "~/db/repositories/items";
+import { createSite } from "~/db/repositories/sites";
 
-const createItemSchema = z.object({
+const createSiteSchema = z.object({
   title: z.string().min(1).max(255),
   description: z.string().max(1000).optional(),
 });
@@ -48,14 +51,10 @@ export async function action({
   const user = getAuthenticatedUser(context);
 
   const formData = await request.formData();
-  const { data, fieldErrors } = parseForm(formData, createItemSchema);
+  const { data, fieldErrors } = parseForm(formData, createSiteSchema);
   if (fieldErrors) return { fieldErrors };
 
-  await createItem({
-    organizationId: user.organizationId,
-    title: data.title,
-    description: data.description ?? null,
-  });
+  await createSite(user.organizationId, data.title);
   return redirect(".");
 }
 
@@ -79,9 +78,9 @@ export default function Page() {
 Routes import from [db/repositories/](../db/repositories/).
 
 ```ts
-import { listItemsByOrgPaginated } from "~/db/repositories/items";
+import { listSites } from "~/db/repositories/sites";
 
-const items = await listItemsByOrgPaginated(user.organizationId, page, pageSize);
+const sites = await listSites(user.organizationId);
 ```
 
 Multi-org: scope every query by `organizationId` (read it from the authenticated user). See the [repository guide](../db/repositories/repository.md).

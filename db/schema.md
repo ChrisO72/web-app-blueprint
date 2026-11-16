@@ -5,7 +5,7 @@ configure and start PostgreSQL using [README.md](README.md).
 
 ## Files
 
-- `schema/` — domain tables: auth, files, items, organizations, and settings.
+- `schema/` — domain tables: auth, files, Sites, issues, PRs, tasks, comments, organizations, and settings.
 - [schema/shared.ts](schema/shared.ts) — common timestamps.
 - `drizzle/` — generated SQL and migration journal; never edit by hand.
 - [repositories/](repositories/README.md) — application database access.
@@ -37,8 +37,8 @@ import { index, integer, pgTable, varchar } from "drizzle-orm/pg-core";
 import { organizations } from "./organizations";
 import { timestamps } from "./shared";
 
-export const items = pgTable(
-  "items",
+export const examples = pgTable(
+  "examples",
   {
     id: integer().primaryKey().generatedAlwaysAsIdentity(),
     ...timestamps,
@@ -48,17 +48,23 @@ export const items = pgTable(
     title: varchar({ length: 255 }).notNull(),
   },
   (table) => [
-    index("items_org_active_idx")
+    index("examples_org_active_idx")
       .on(table.organizationId)
       .where(sql`deleted_at IS NULL`),
   ],
 );
 
-export type InsertItem = typeof items.$inferInsert;
-export type SelectItem = typeof items.$inferSelect;
+export type InsertExample = typeof examples.$inferInsert;
+export type SelectExample = typeof examples.$inferSelect;
 ```
 
 The schema's `$onUpdate` updates `updatedAt` automatically on Drizzle updates. Reads filter
 `isNull(table.deletedAt)`; deletes set `deletedAt`. Domain operations take `organizationId` from
 the authenticated context and scope every query. See the [repository template](repositories/repository.md)
 for these operations. Partial indexes should match active-row filters on frequently queried columns.
+
+Site delivery records are organization- and Site-scoped. Issue and PR numbers are unique within
+a Site. Tasks and comments carry PR revisions so prior review results remain historical when a
+new build starts. Shared demo telemetry, topology, and Wiki fixtures live under `shared/`.
+
+The initial migration targets a fresh installation; it does not upgrade the previous sample app.

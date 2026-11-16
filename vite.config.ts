@@ -31,6 +31,7 @@ export default defineConfig((configEnv) => ({
   ],
   resolve: {
     alias: [
+      { find: "~/shared", replacement: fileURLToPath(new URL("./shared", import.meta.url)) },
       { find: "~/db", replacement: fileURLToPath(new URL("./db", import.meta.url)) },
       {
         find: "~/integrations",

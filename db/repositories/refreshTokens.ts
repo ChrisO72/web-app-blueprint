@@ -11,7 +11,18 @@ export async function findRefreshTokenByHash(tokenHash: string) {
   const [row] = await db
     .select()
     .from(refreshTokens)
-    .where(and(eq(refreshTokens.tokenHash, tokenHash), gt(refreshTokens.expiresAt, new Date())))
+    .where(
+      and(
+        or(
+          eq(refreshTokens.tokenHash, tokenHash),
+          and(
+            eq(refreshTokens.previousTokenHash, tokenHash),
+            gt(refreshTokens.previousValidUntil, new Date()),
+          ),
+        ),
+        gt(refreshTokens.expiresAt, new Date()),
+      ),
+    )
     .limit(1);
   return row ?? null;
 }

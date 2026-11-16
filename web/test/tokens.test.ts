@@ -37,6 +37,7 @@ describe("refresh-token responses", () => {
     });
     vi.mocked(getUserById).mockResolvedValue({
       id: 42,
+      isGuest: false,
       email: "user@example.com",
       firstName: null,
       lastName: null,

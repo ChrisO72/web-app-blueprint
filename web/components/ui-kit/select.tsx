@@ -13,10 +13,14 @@ export const Select = forwardRef(function Select(
         className,
         // Basic layout
         'group relative block w-full',
+        // Background color + shadow applied to inset pseudo element, so shadow blends with border in light mode
+        'before:absolute before:inset-px before:rounded-[calc(var(--radius-lg)-1px)] before:bg-white before:shadow-sm',
+        // Background color is moved to control and shadow is removed in dark mode so hide `before` pseudo
+        'dark:before:hidden',
         // Focus ring
-        'after:pointer-events-none after:absolute after:inset-0 after:rounded-md after:ring-transparent after:ring-inset has-data-focus:after:ring-2 has-data-focus:after:ring-zinc-500',
+        'after:pointer-events-none after:absolute after:inset-0 after:rounded-lg after:ring-transparent after:ring-inset has-data-focus:after:ring-2 has-data-focus:after:ring-blue-500',
         // Disabled state
-        'has-data-disabled:opacity-50',
+        'has-data-disabled:opacity-50 has-data-disabled:before:bg-zinc-950/5 has-data-disabled:before:shadow-none',
       ])}
     >
       <Headless.Select
@@ -25,7 +29,7 @@ export const Select = forwardRef(function Select(
         {...props}
         className={clsx([
           // Basic layout
-          'relative block w-full appearance-none rounded-md py-[calc(--spacing(2.5)-1px)] sm:py-[calc(--spacing(1.5)-1px)]',
+          'relative block w-full appearance-none rounded-lg py-[calc(--spacing(2.5)-1px)] sm:py-[calc(--spacing(1.5)-1px)]',
           // Horizontal padding
           multiple
             ? 'px-[calc(--spacing(3.5)-1px)] sm:px-[calc(--spacing(3)-1px)]'
@@ -37,7 +41,7 @@ export const Select = forwardRef(function Select(
           // Border
           'border border-zinc-950/10 data-hover:border-zinc-950/20 dark:border-white/10 dark:data-hover:border-white/20',
           // Background color
-          'bg-white dark:bg-zinc-900 dark:*:bg-zinc-800',
+          'bg-transparent dark:bg-white/5 dark:*:bg-zinc-800',
           // Hide default focus styles
           'focus:outline-hidden',
           // Invalid state

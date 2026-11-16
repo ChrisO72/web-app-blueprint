@@ -1,32 +1,56 @@
 import {
   ArrowRightStartOnRectangleIcon,
-  ChevronDownIcon,
+  ChevronUpIcon,
   Cog8ToothIcon,
+  ShieldCheckIcon,
 } from "@heroicons/react/16/solid";
 import { useSubmit } from "react-router";
 import {
   Dropdown,
   DropdownButton,
   DropdownDivider,
-  DropdownHeader,
   DropdownItem,
   DropdownLabel,
   DropdownMenu,
 } from "./ui-kit/dropdown";
 import { ThemeToggle, useTheme } from "./theme-toggle";
-import { getDisplayName, type AvatarUser } from "./user-avatar";
+import { NavbarItem } from "./ui-kit/navbar";
+import { SidebarItem } from "./ui-kit/sidebar";
+import { getDisplayName, UserAvatar, type AvatarUser } from "./user-avatar";
 
-export function AccountMenu({ user }: { user: AvatarUser }) {
+export function AccountMenu({
+  user,
+  mobile = false,
+}: {
+  user: AvatarUser & { role: "admin" | "user" | "viewer" };
+  mobile?: boolean;
+}) {
   const submit = useSubmit();
   const { theme, selectTheme } = useTheme();
   return (
     <Dropdown>
-      <DropdownButton as="button" aria-label="Account menu" className="nav-link gap-1">
-        Account
-        <ChevronDownIcon aria-hidden="true" className="size-3.5" />
-      </DropdownButton>
+      {mobile ? (
+        <DropdownButton as={NavbarItem} aria-label="Account menu">
+          <UserAvatar user={user} className="size-8" />
+        </DropdownButton>
+      ) : (
+        <DropdownButton as={SidebarItem} aria-label="Account menu">
+          <span className="flex min-w-0 items-center gap-3">
+            <UserAvatar user={user} className="size-10" />
+            <span className="min-w-0">
+              <span className="block truncate text-sm/5 font-medium text-zinc-950 dark:text-white">
+                {getDisplayName(user)}
+              </span>
+              <span className="block truncate text-xs/5 font-normal text-zinc-500 dark:text-zinc-400">
+                {user.email}
+              </span>
+            </span>
+          </span>
+          <ChevronUpIcon data-slot="icon" />
+        </DropdownButton>
+      )}
       <DropdownMenu
-        anchor="bottom end"
+        anchor={mobile ? "bottom end" : "top start"}
         className="min-w-64"
         onKeyDown={(event) => {
           if (event.key !== "Enter" && event.key !== " ") return;
@@ -41,17 +65,18 @@ export function AccountMenu({ user }: { user: AvatarUser }) {
           }
         }}
       >
-        <DropdownHeader>
-          <p className="text-sm font-medium">{getDisplayName(user)}</p>
-          <p className="max-w-64 truncate text-xs text-zinc-500 dark:text-zinc-400">{user.email}</p>
-        </DropdownHeader>
-        <DropdownDivider />
         <ThemeToggle theme={theme} onSelect={selectTheme} />
         <DropdownDivider />
         <DropdownItem href="/account">
           <Cog8ToothIcon data-slot="icon" />
           <DropdownLabel>Account settings</DropdownLabel>
         </DropdownItem>
+        {user.role === "admin" && (
+          <DropdownItem href="/admin">
+            <ShieldCheckIcon data-slot="icon" />
+            <DropdownLabel>Admin</DropdownLabel>
+          </DropdownItem>
+        )}
         <DropdownDivider />
         <DropdownItem onClick={() => submit(null, { method: "post", action: "/logout" })}>
           <ArrowRightStartOnRectangleIcon data-slot="icon" />

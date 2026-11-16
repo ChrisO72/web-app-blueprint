@@ -10,7 +10,10 @@ import {
 import { organizations } from "../schema/organizations";
 import { files } from "../schema/files";
 
+import { seedSite, type Transaction } from "./sites";
+
 const userColumns = {
+  isGuest: users.isGuest,
   id: users.id,
   email: users.email,
   firstName: users.firstName,
@@ -26,10 +29,24 @@ const userColumns = {
 
 export type User = Pick<SelectUser, keyof typeof userColumns>;
 
-export async function registerUser(data: Pick<InsertUser, "email" | "passwordHash" | "firstName">) {
+async function registrationRole(tx: Transaction) {
+  // Both signup paths share the lock. Guest visits never claim the initial admin.
+  await tx.execute(sql`SELECT pg_advisory_xact_lock(hashtext('nimoh.net:registration'))`);
+  const [{ value }] = await tx
+    .select({ value: count() })
+    .from(users)
+    .where(eq(users.isGuest, false));
+  // Include deleted registrations so removing accounts cannot reopen admin signup.
+  return value === 0 ? ("admin" as const) : ("user" as const);
+}
+
+export async function registerUser(data: {
+  email: string;
+  passwordHash: string;
+  firstName: string | null;
+}) {
   return db.transaction(async (tx) => {
-    await tx.execute(sql`SELECT pg_advisory_xact_lock(hashtext('nimoh.net:registration'))`);
-    const [{ value }] = await tx.select({ value: count() }).from(users);
+    const role = await registrationRole(tx);
     const [organization] = await tx
       .insert(organizations)
       .values({ name: `${data.firstName || data.email}'s Organization`.slice(0, 255) })
@@ -40,9 +57,10 @@ export async function registerUser(data: Pick<InsertUser, "email" | "passwordHas
         ...data,
         email: data.email.toLowerCase(),
         organizationId: organization.id,
-        role: value === 0 ? "admin" : "user",
+        role,
       })
       .returning(userColumns);
+    await seedSite(tx, organization.id);
     return user;
   });
 }
@@ -208,5 +226,40 @@ export async function replaceUserAvatar(
         );
     }
     return true;
+  });
+}
+
+export async function createGuest() {
+  return db.transaction(async (tx) => {
+    const [org] = await tx.insert(organizations).values({ name: "Guest workspace" }).returning();
+    const [user] = await tx
+      .insert(users)
+      .values({ organizationId: org.id, isGuest: true, role: "user" })
+      .returning(userColumns);
+    await seedSite(tx, org.id);
+    return user;
+  });
+}
+export async function convertGuest(
+  id: number,
+  organizationId: number,
+  data: { email: string; passwordHash: string; firstName: string | null },
+) {
+  return db.transaction(async (tx) => {
+    const role = await registrationRole(tx);
+    const [user] = await tx
+      .update(users)
+      .set({ ...data, email: data.email.toLowerCase(), isGuest: false, role })
+      .where(
+        and(
+          eq(users.id, id),
+          eq(users.organizationId, organizationId),
+          eq(users.isGuest, true),
+          isNull(users.deletedAt),
+        ),
+      )
+      .returning(userColumns);
+    if (!user) throw new Error("Guest account is no longer available.");
+    return user;
   });
 }

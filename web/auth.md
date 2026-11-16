@@ -6,8 +6,14 @@ Read this when changing sessions, protected routes, permissions, or public authe
 
 The [protected layout middleware](routes/layout.tsx) calls `requireAuth(request)` once per request,
 stores the user in `authenticatedUserContext`, and appends rotated cookies to the final response.
-This covers loaders and actions without racing parallel matched loaders. Invalid sessions redirect
-to `/login`; deleted-user sessions also clear cookies.
+This covers loaders and actions without racing parallel matched loaders. A first GET without a session creates a guest user, organization, and seeded Site. Unauthenticated
+mutations redirect to `/login`; deleted-user sessions also clear cookies. Signup converts the guest
+in place. Guests can explore and simulate the issue workflow; account settings and additional Site
+creation use `requireRegistered(context)`. Session tokens identify users by ID; permissions come
+from the current database record. The first registered account becomes an administrator, whether
+created directly or converted from a guest. Guest visits do not count as registrations. Later
+registrations receive the user role; deleted registrations still count to prevent reopening
+administrator signup.
 
 Refresh rotation is serialized in PostgreSQL. Parallel requests may reuse the previous token for
 10 seconds and receive the same replacement; logout revokes either token's session.

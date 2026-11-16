@@ -279,7 +279,7 @@ function ToastCard({
       onBlurCapture={(event) => {
         if (!event.currentTarget.contains(event.relatedTarget)) setFocused(false);
       }}
-      className="pointer-events-auto flex items-start gap-3 rounded-md bg-white p-4 ring-1 ring-zinc-950/10 dark:bg-zinc-900 dark:ring-white/15 forced-colors:outline"
+      className="pointer-events-auto flex items-start gap-3 rounded-2xl bg-white/95 p-4 shadow-[0_4px_24px_-4px_rgb(0_0_0/0.16)] ring-1 ring-zinc-950/8 backdrop-blur-xl dark:bg-zinc-900/95 dark:ring-white/15 forced-colors:outline"
     >
       {notification.icon !== null && (
         <span
@@ -308,7 +308,7 @@ function ToastCard({
           if (event.detail === 0) event.currentTarget.closest("section")?.focus();
           dismiss(notification.id);
         }}
-        className="relative -m-1 flex size-8 shrink-0 items-center justify-center rounded-full text-zinc-400 transition before:absolute before:size-11 hover:bg-zinc-950/5 hover:text-zinc-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-500 dark:hover:bg-white/10 dark:hover:text-zinc-200"
+        className="relative -m-1 flex size-8 shrink-0 items-center justify-center rounded-full text-zinc-400 transition before:absolute before:size-11 hover:bg-zinc-950/5 hover:text-zinc-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500 dark:hover:bg-white/10 dark:hover:text-zinc-200"
       >
         <XMarkIcon aria-hidden="true" className="size-4" />
       </button>

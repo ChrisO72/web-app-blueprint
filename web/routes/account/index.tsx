@@ -15,7 +15,7 @@ import { AVATAR_CONTENT_TYPES, MAX_AVATAR_BYTES } from "~/web/lib/avatar";
 import { changePassword } from "~/web/lib/auth/password-change.server";
 import { type ActionData, parseForm } from "~/web/lib/form";
 import { createRateLimitResponse } from "~/web/lib/rate-limit.server";
-import { clearAuthCookies, getAuthenticatedUser } from "~/web/lib/session.server";
+import { clearAuthCookies, requireRegistered } from "~/web/lib/session.server";
 import type { Route } from "./+types/index";
 import { PersonalDetailsForm, PasswordForm } from "./account-forms";
 import { ProfilePhotoForm } from "./profile-photo-form";
@@ -66,14 +66,14 @@ export type AccountActionData = ActionData & {
 };
 
 export function loader({ context }: Route.LoaderArgs) {
-  return { user: getAuthenticatedUser(context), storageEnabled: isFileStorageEnabled };
+  return { user: requireRegistered(context), storageEnabled: isFileStorageEnabled };
 }
 
 export async function action({
   request,
   context,
 }: Route.ActionArgs): Promise<AccountActionData | Response> {
-  const user = getAuthenticatedUser(context);
+  const user = requireRegistered(context);
   if (request.method !== "POST") throw new Response("Method not allowed", { status: 405 });
   const formData = await request.formData();
   const parsedIntent = parseForm(formData, intentSchema);

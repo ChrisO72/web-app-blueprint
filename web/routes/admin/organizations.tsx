@@ -147,7 +147,7 @@ export default function AdminOrganizationsPage({ loaderData }: Route.ComponentPr
         <Heading>
           Organizations
           {organizations.length > 0 && (
-            <span className="ml-2 text-base font-normal tracking-normal text-zinc-500 dark:text-zinc-400">
+            <span className="ml-2 font-normal text-zinc-500 dark:text-zinc-400">
               ({organizations.length} total)
             </span>
           )}
@@ -157,7 +157,7 @@ export default function AdminOrganizationsPage({ loaderData }: Route.ComponentPr
 
       <FormError actionData={deleteFetcher.data} />
       {organizations.length === 0 ? (
-        <div className="empty-state">
+        <div className="rounded-lg bg-zinc-50 py-12 text-center dark:bg-zinc-900">
           <p className="text-zinc-500 dark:text-zinc-400">No organizations found.</p>
         </div>
       ) : (

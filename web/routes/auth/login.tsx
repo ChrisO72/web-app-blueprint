@@ -10,11 +10,11 @@ import { Input } from "~/web/components/ui-kit/input";
 import { Strong, Text, TextLink } from "~/web/components/ui-kit/text";
 import { getSiteSettings } from "~/db/repositories/settings";
 import { validateLogin } from "~/web/lib/auth/password.server";
-import { createTokens, verifyAccessToken } from "~/web/lib/auth/tokens.server";
+import { createTokens } from "~/web/lib/auth/tokens.server";
 import { parseForm, type ActionData } from "~/web/lib/form";
 import { isEmailConfigured } from "~/integrations/mail/client.server";
 import { checkAuthRateLimit, createRateLimitResponse } from "~/web/lib/rate-limit.server";
-import { readAccessTokenCookie, setAuthCookies } from "~/web/lib/session.server";
+import { readSessionUser, setAuthCookies } from "~/web/lib/session.server";
 import type { Route } from "./+types/login";
 import { useEffect } from "react";
 import { useToast } from "~/web/components/toast";
@@ -25,10 +25,8 @@ const loginSchema = z.object({
 });
 
 export async function loader({ request }: Route.LoaderArgs) {
-  const accessToken = await readAccessTokenCookie(request);
-  if (accessToken && verifyAccessToken(accessToken)) {
-    return redirect("/");
-  }
+  const current = await readSessionUser(request);
+  if (current && !current.isGuest) return redirect("/");
 
   const passwordResetComplete =
     new URL(request.url).searchParams.get("passwordReset") === "success";
@@ -56,7 +54,7 @@ export async function action({ request }: Route.ActionArgs): Promise<ActionData 
     return redirect(`/check-email?email=${encodeURIComponent(email)}`);
   }
 
-  const { accessToken, refreshToken } = await createTokens(user.id, user.email);
+  const { accessToken, refreshToken } = await createTokens(user.id);
   const cookies = await setAuthCookies(accessToken, refreshToken);
 
   return redirect("/", {

@@ -45,7 +45,7 @@ export default defineConfig([
         {
           patterns: [
             {
-              regex: "^~(?:$|/(?!(?:web|db|integrations|worker|telemetry|runtime)/))",
+              regex: "^~(?:$|/(?!(?:web|db|integrations|worker|telemetry|runtime|shared)/))",
               message: "Use an explicit component alias such as ~/web/* or ~/db/*.",
             },
             {

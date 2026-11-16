@@ -62,7 +62,7 @@ export async function action({
   if (!rateLimit.allowed) return createRateLimitResponse(rateLimit.retryAfterSeconds);
 
   const user = await getUserCredentialsByEmail(data.email);
-  if (!user?.passwordHash || !(await canCreatePasswordResetToken(user.id))) {
+  if (!user?.email || !user.passwordHash || !(await canCreatePasswordResetToken(user.id))) {
     return { success: true };
   }
 

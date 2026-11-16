@@ -14,7 +14,8 @@
       "~/integrations/*": ["./integrations/*"],
       "~/worker/*": ["./worker/*"],
       "~/telemetry/*": ["./telemetry/*"],
-      "~/runtime/*": ["./runtime/*"]
+      "~/runtime/*": ["./runtime/*"],
+      "~/shared/*": ["./shared/*"]
     },
     "esModuleInterop": true,
     "verbatimModuleSyntax": true,

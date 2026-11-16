@@ -1,6 +1,9 @@
 # nimoh.net
 
-A minimal web application for nimoh.net.
+Site is an interactive blueprint demo at nimoh.net. Visitors receive an isolated guest workspace
+with example application health, traces, GitHub issues, pull requests, and agent tasks. Signup
+preserves progress and unlocks additional demo Sites. All operational data and delivery actions
+in the workspace are simulated; the demo does not connect to GitHub or execute agents.
 Each part of the app has its own dedicated README file for more info.
 
 Cool stuff included: [TypeScript](https://www.typescriptlang.org/) | [React](https://react.dev/) | [React Router](https://reactrouter.com/) | [PostgreSQL](https://www.postgresql.org/) | [Redis](https://redis.io/) | [Vite](https://vite.dev/) | [Tailwind CSS](https://tailwindcss.com/) | [Drizzle ORM](https://orm.drizzle.team/) | [BullMQ](https://bullmq.io/) | [Headless UI](https://headlessui.com/) | [Motion](https://motion.dev/) | [Zod](https://zod.dev/) | [Heroicons](https://heroicons.com/) | [Lettermint](https://lettermint.co/)
