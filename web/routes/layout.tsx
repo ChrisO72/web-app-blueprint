@@ -75,6 +75,7 @@ export default function Layout({
         Skip to content
       </a>
       <SidebarLayout
+        fullWidth={!!siteId && (!view || view === "health")}
         navbar={
           <Navbar aria-label="Account navigation">
             <NavbarSpacer />
@@ -108,7 +109,6 @@ export default function Layout({
                 <SidebarSection>
                   {[
                     ["overview", "Overview"],
-                    ["health", "Health"],
                     ["io", "I/O"],
                     ["activity", "Activity"],
                     ["wiki", "Wiki"],

@@ -32,8 +32,9 @@ Use [components/create-site-dialog.tsx](components/create-site-dialog.tsx) for a
 - Use [SidebarLayout](components/ui-kit/sidebar-layout.tsx) for the application shell and
   [AuthLayout](components/ui-kit/auth-layout.tsx) for authentication pages.
 - The sidebar header selects a Site within the current organization. Site views (Overview,
-  Health, I/O, Activity, and Wiki) stay in the sidebar beneath it, with the first Site selected
-  outside Site routes. Add a Site in a dialog from the bottom of the selector dropdown.
+  I/O, Activity, and Wiki) stay in the sidebar beneath it, with the first Site selected
+  outside Site routes. Overview shows health in the schematic; selecting a component opens its
+  telemetry panel. Add a Site in a dialog from the bottom of the selector dropdown.
 - Use `Navbar` and `NavbarItem` for page filters, `Table` for record lists, and `Badge` for statuses.
   Keep empty states centered in a rounded `bg-zinc-50 dark:bg-zinc-900` container.
 - Use `clsx` for conditional class composition.

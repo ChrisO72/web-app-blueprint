@@ -1,4 +1,4 @@
-import { Form, Link, useNavigation } from "react-router";
+import { Form, Link, redirect, useNavigation } from "react-router";
 import { z } from "zod";
 import { advanceIssue, getWorkspace } from "~/db/repositories/issues";
 import { getAuthenticatedUser } from "~/web/lib/session.server";
@@ -42,7 +42,9 @@ export async function loader({ context, params, request }: Route.LoaderArgs) {
     !workspace.pullRequests.some((p) => p.number === Number(params.number))
   )
     throw new Response("PR not found", { status: 404 });
-  const query = Object.fromEntries(new URL(request.url).searchParams);
+  const url = new URL(request.url);
+  if (params.view === "health") return redirect(`/sites/${id}${url.search}`);
+  const query = Object.fromEntries(url.searchParams);
   return { ...workspace, view: params.view ?? "overview", number: Number(params.number), query };
 }
 export async function action({ context, params, request }: Route.ActionArgs) {
@@ -109,7 +111,8 @@ function Stage({ value }: { value: string }) {
 export default function Workspace({ loaderData: d, actionData }: Route.ComponentProps) {
   const busy = useNavigation().state !== "idle";
   const base = `/sites/${d.site.id}`;
-  const component = components.find((c) => c.key === d.query.component);
+  const componentKey = d.query.component === "api" ? "web" : d.query.component;
+  const component = components.find((c) => c.key === componentKey);
   const trace = traces.find((t) => t.id === d.query.trace) ?? traces[0];
   const doc = documents.find((doc) => doc.key === d.query.doc);
   const pr = d.view === "pulls" ? d.pullRequests.find((p) => p.number === d.number) : undefined;
@@ -163,83 +166,18 @@ export default function Workspace({ loaderData: d, actionData }: Route.Component
           {d.site.repositoryOwner}/{d.site.repositoryName} · Example repository
         </span>
       </div>
-      <Text className="mt-2 mb-6">
-        Interactive demo · telemetry, GitHub records, agent results, and releases are simulated.
-      </Text>
+      <Text className="mt-2 mb-6">example/fullstack-blueprint · Example repository</Text>
       <FormError actionData={actionData} />
       {d.view === "overview" && (
-        <>
-          <div className="grid gap-6 border-b border-zinc-950/10 pb-6 sm:grid-cols-3 dark:border-white/10">
-            <Link to={`${base}/health`}>
-              <p className="text-sm text-zinc-500">Health</p>
-              <p className="mt-2 text-3xl font-semibold">18/21</p>
-              <p className="mt-2 text-xs text-amber-600">Email delivery needs attention</p>
-            </Link>
-            <Link to={`${base}/io`}>
-              <p className="text-sm text-zinc-500">I/O</p>
-              <p className="mt-2 text-3xl font-semibold">
-                300 <span className="text-sm font-normal">req/s</span>
-              </p>
-              <p className="mt-2 text-xs text-zinc-500">p95 142 ms</p>
-            </Link>
-            <Link to={`${base}/io`}>
-              <p className="text-sm text-zinc-500">Throughput · last hour</p>
-              <svg
-                viewBox="0 0 240 65"
-                role="img"
-                aria-label="Example throughput varied between 180 and 320 requests per second"
-                className="mt-2 h-16 w-full"
-              >
-                {[
-                  32, 40, 27, 45, 38, 50, 41, 36, 55, 48, 42, 51, 45, 39, 52, 46, 56, 48, 42, 50,
-                ].map((h, i) => (
-                  <rect
-                    key={i}
-                    x={i * 12}
-                    y={65 - h}
-                    width="7"
-                    height={h}
-                    className="fill-zinc-400 dark:fill-zinc-600"
-                  />
-                ))}
-              </svg>
-            </Link>
-          </div>
-          <div className="mt-6 grid gap-8 xl:grid-cols-[2fr_3fr]">
-            <section className="min-w-0">
-              <Subheading>Recent activity</Subheading>
-              {activity(5)}
-              <Text className="mt-4">
-                <TextLink href={`${base}/activity`}>All activity →</TextLink>
-              </Text>
-            </section>
-            <section className="min-w-0">
-              <Subheading>Connected system</Subheading>
-              <SystemMap href={(key) => `${base}/health?component=${key}`} />
-              <Text>
-                <TextLink href={`${base}/issues/349`}>
-                  Start here: investigate delayed confirmation emails →
-                </TextLink>
-              </Text>
-            </section>
-          </div>
-        </>
-      )}
-      {d.view === "health" && (
         <DetailLayout
           label="Component telemetry"
-          closeHref={`${base}/health`}
+          closeHref={base}
           panel={
             component && (
               <>
                 <div className="flex justify-between">
                   <Subheading>{component.name}</Subheading>
-                  <Button
-                    plain
-                    aria-label="Close telemetry panel"
-                    href={`${base}/health`}
-                    preventScrollReset
-                  >
+                  <Button plain aria-label="Close telemetry panel" href={base} preventScrollReset>
                     ✕
                   </Button>
                 </div>
@@ -265,6 +203,7 @@ export default function Workspace({ loaderData: d, actionData }: Route.Component
                   .filter(
                     (i) =>
                       i.componentKey === component.key ||
+                      (component.key === "web" && i.componentKey === "api") ||
                       (component.key === "queue" && i.number === 349),
                   )
                   .map((i) => (
@@ -280,13 +219,30 @@ export default function Workspace({ loaderData: d, actionData }: Route.Component
             )
           }
         >
-          <section className="min-w-0">
-            <Subheading>Application health</Subheading>
-            <SystemMap
-              selected={component?.key}
-              href={(key) => `${base}/health?component=${key}`}
-            />
-          </section>
+          <SystemMap
+            fullSize
+            selected={component?.key}
+            href={(key) => `${base}?component=${key}`}
+            summary={
+              <dl className="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm">
+                <div className="flex gap-1">
+                  <dt className="text-zinc-500 dark:text-zinc-400">Health:</dt>
+                  <dd className="font-medium text-amber-600 dark:text-amber-400">18/21</dd>
+                </div>
+                <div className="flex gap-1">
+                  <dt className="text-zinc-500 dark:text-zinc-400">I/O:</dt>
+                  <dd>
+                    <Link
+                      to={`${base}/io`}
+                      className="font-medium text-zinc-950 hover:underline focus-visible:outline-blue-500 dark:text-white"
+                    >
+                      300 req/s
+                    </Link>
+                  </dd>
+                </div>
+              </dl>
+            }
+          />
         </DetailLayout>
       )}
       {d.view === "io" && (
@@ -324,7 +280,7 @@ export default function Workspace({ loaderData: d, actionData }: Route.Component
             </ul>
             <div className="min-w-0">
               <Subheading>{trace.name}</Subheading>
-              <SystemMap trace={trace} href={(key) => `${base}/health?component=${key}`} />
+              <SystemMap trace={trace} href={(key) => `${base}?component=${key}`} />
               <div className="overflow-x-auto">
                 <Table>
                   <TableHead>
@@ -560,7 +516,7 @@ export default function Workspace({ loaderData: d, actionData }: Route.Component
                   {issue.componentKey && (
                     <TextLink
                       className="block underline"
-                      href={`${base}/health?component=${issue.componentKey}`}
+                      href={`${base}?component=${issue.componentKey}`}
                     >
                       Component telemetry →
                     </TextLink>
