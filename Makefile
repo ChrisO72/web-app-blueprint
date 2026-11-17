@@ -1,4 +1,4 @@
-CHECK_COMPONENTS = web worker db mail storage telemetry runtime
+CHECK_COMPONENTS = web control worker db mail storage telemetry runtime
 CHECK_PATH = $(if $(filter mail storage,$*),integrations/$*,$*)
 
 .PHONY: dev reload down check $(CHECK_COMPONENTS:%=check-%)

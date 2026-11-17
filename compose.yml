@@ -6,11 +6,13 @@ networks:
 
 volumes:
   pgdata:
+  control-pgdata:
   redisdata:
   objectdata:
 
 x-app-environment: &app-environment
   DATABASE_URL: postgresql://blueprint-user:blueprint-password@database:5432/blueprint
+  CONTROL_DATABASE_URL: postgresql://control-user:control-password@control-database:5432/control
   REDIS_URL: redis://redis:6379
   APP_URL: ${APP_URL:-http://localhost:5173}
   LETTERMINT_API_KEY: ${LETTERMINT_API_KEY:-}
@@ -204,3 +206,20 @@ services:
           path: worker/Dockerfile
         - action: rebuild
           path: worker/build.ts
+
+  control-database:
+    image: postgres:16-alpine
+    restart: always
+    environment:
+      POSTGRES_DB: control
+      POSTGRES_USER: control-user
+      POSTGRES_PASSWORD: control-password
+    volumes:
+      - control-pgdata:/var/lib/postgresql/data
+    ports:
+      - "127.0.0.1:55433:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 2s
+      timeout: 5s
+      retries: 15

@@ -8,6 +8,7 @@ Cool stuff included: [TypeScript](https://www.typescriptlang.org/) | [React](htt
 | Component                                 | Purpose and setup                      |
 | ----------------------------------------- | -------------------------------------- |
 | [Web](web/README.md)                      | React Router UI and server routes      |
+| [Control](control/README.md)              | Admin control room and site map        |
 | [Worker](worker/README.md)                | BullMQ jobs and scheduled tasks        |
 | [Database](db/README.md)                  | PostgreSQL, Drizzle, and migrations    |
 | [Mail](integrations/mail/README.md)       | Lettermint email delivery              |
@@ -22,6 +23,8 @@ Cool stuff included: [TypeScript](https://www.typescriptlang.org/) | [React](htt
 │   ├── public/
 │   ├── routes/
 │   └── test/            # Web unit tests
+├── control/             # Site map component and separate database client
+├── system.config.ts     # Site systems and connections
 ├── worker/              # Background jobs and scheduled tasks
 │   ├── jobs/
 │   └── schedules/
@@ -74,22 +77,24 @@ make reload                  # Apply .env and migration changes, then resume wat
 
 `make dev` runs Compose in watch mode: code changes reload the related containers or trigger Vite HMR.
 
-This starts web, worker, PostgreSQL, Redis, and SeaweedFS. SeaweedFS creates the private bucket
+This starts web, worker, application and Control PostgreSQL instances, Redis, and SeaweedFS. SeaweedFS creates the private bucket
 automatically. Database migrations must succeed and storage must pass its authenticated bucket
 healthcheck before web and worker start.
 
-| Service          | Local address           |
-| ---------------- | ----------------------- |
-| Web              | <http://localhost:5173> |
-| SeaweedFS S3 API | <http://127.0.0.1:8333> |
-| PostgreSQL       | `127.0.0.1:55432`       |
-| Redis            | `127.0.0.1:6379`        |
+| Service            | Local address           |
+| ------------------ | ----------------------- |
+| Web                | <http://localhost:5173> |
+| SeaweedFS S3 API   | <http://127.0.0.1:8333> |
+| PostgreSQL         | `127.0.0.1:55432`       |
+| Control PostgreSQL | `127.0.0.1:55433`       |
+| Redis              | `127.0.0.1:6379`        |
 
 ## Checks
 
 ```bash
 make check                   # Format, typecheck, lint, and unit tests
 make check-web               # Web checks
+make check-control           # Control checks
 make check-worker            # Worker checks
 make check-db                # Database checks
 make check-mail              # Mail checks

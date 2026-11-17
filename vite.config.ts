@@ -42,6 +42,11 @@ export default defineConfig((configEnv) => ({
       },
       { find: "~/runtime", replacement: fileURLToPath(new URL("./runtime", import.meta.url)) },
       { find: "~/worker", replacement: fileURLToPath(new URL("./worker", import.meta.url)) },
+      {
+        find: "~/system.config",
+        replacement: fileURLToPath(new URL("./system.config.ts", import.meta.url)),
+      },
+      { find: "~/control", replacement: fileURLToPath(new URL("./control", import.meta.url)) },
       { find: "~/web", replacement: fileURLToPath(new URL("./web", import.meta.url)) },
     ],
   },

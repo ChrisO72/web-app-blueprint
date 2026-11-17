@@ -77,11 +77,6 @@ export default function Layout({ loaderData }: Route.ComponentProps) {
               <SidebarItem href="/items" current={pathname.startsWith("/items")}>
                 <SidebarLabel>Items</SidebarLabel>
               </SidebarItem>
-              {user.role === "admin" && (
-                <SidebarItem href="/admin" current={pathname.startsWith("/admin")}>
-                  <SidebarLabel>Admin</SidebarLabel>
-                </SidebarItem>
-              )}
             </SidebarSection>
           </SidebarBody>
           <SidebarFooter className="max-lg:hidden">
