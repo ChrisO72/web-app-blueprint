@@ -51,7 +51,11 @@ export default defineConfig((configEnv) => ({
     ],
   },
   test: {
-    include: ["*/test/**/*.test.{ts,tsx}", "integrations/*/test/**/*.test.{ts,tsx}"],
+    include: [
+      "*/test/**/*.test.{ts,tsx}",
+      "integrations/*/test/**/*.test.{ts,tsx}",
+      "control/*/test/**/*.test.{ts,tsx}",
+    ],
     // Satisfy environment validation; unit tests use in-memory dependencies.
     env: {
       NODE_ENV: "test",
@@ -61,6 +65,7 @@ export default defineConfig((configEnv) => ({
       JWT_SECRET: "test-jwt-secret-that-is-at-least-32-characters",
       REFRESH_SECRET: "test-refresh-secret-that-is-at-least-32-characters",
       APP_URL: "http://localhost:5173",
+      CONTROL_DATABASE_URL: "postgresql://test:test@127.0.0.1:1/control_test",
     },
   },
 }));

@@ -37,6 +37,8 @@ const positions = {
   mail: [140, 571.5],
   control: [940, 177],
   controlDatabase: [940, 32],
+  githubAdapter: [940, 477],
+  github: [877.5, 571.5],
 } satisfies Record<SystemId, [number, number]>;
 
 const paths = {
@@ -53,6 +55,10 @@ const paths = {
   "mailAdapter-mail": "M265 539.5 V571.5",
   "web-control": "M784 320 V304 H1002.5 V239.5",
   "control-controlDatabase": "M1002.5 177 V157",
+  "worker-control": "M374 445 V460 H850 V208.25 H940",
+  "control-githubAdapter": "M1002.5 239.5 V477",
+  "githubAdapter-github": "M1002.5 539.5 V571.5",
+  "github-web": "M877.5 602.75 H830 V390 H800",
 } satisfies {
   [Connection in SiteConfig["connections"][number] as `${Connection[0]}-${Connection[1]}`]: string;
 };

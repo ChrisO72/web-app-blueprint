@@ -23,7 +23,7 @@ Cool stuff included: [TypeScript](https://www.typescriptlang.org/) | [React](htt
 │   ├── public/
 │   ├── routes/
 │   └── test/            # Web unit tests
-├── control/             # Site map component and separate database client
+├── control/             # Control domain, site map, and separate database
 ├── system.config.ts     # Site systems and connections
 ├── worker/              # Background jobs and scheduled tasks
 │   ├── jobs/
@@ -33,6 +33,7 @@ Cool stuff included: [TypeScript](https://www.typescriptlang.org/) | [React](htt
 │   ├── repositories/
 │   └── drizzle/
 ├── integrations/        # Shared capabilities backed by external providers
+│   ├── github/          # GitHub API connection
 │   ├── mail/            # Email sending and templates
 │   └── storage/         # Private S3 file storage
 ├── telemetry/           # Application monitoring and debugging
@@ -95,6 +96,7 @@ healthcheck before web and worker start.
 make check                   # Format, typecheck, lint, and unit tests
 make check-web               # Web checks
 make check-control           # Control checks
+make check-github            # GitHub integration checks
 make check-worker            # Worker checks
 make check-db                # Database checks
 make check-mail              # Mail checks

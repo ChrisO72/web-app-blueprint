@@ -69,14 +69,27 @@ const systems = {
   control: {
     name: "Control",
     kind: "module",
-    source: "web/routes/control/",
-    description: "Admin-only Control room within the Web application.",
+    source: "control/",
+    description: "Admin-only Control room, GitHub synchronization, and mirror data access.",
   },
   controlDatabase: {
     name: "Control DB",
     kind: "store",
     source: "control/db/",
-    description: "Separate PostgreSQL reserved for Control workflow data.",
+    description: "Separate PostgreSQL for the GitHub connection, issues, PRs, and workflow runs.",
+  },
+  githubAdapter: {
+    name: "GitHub API",
+    kind: "adapter",
+    source: "integrations/github/",
+    description:
+      "Repository metadata, webhook registration, and synchronization through the shared worker.",
+  },
+  github: {
+    name: "GitHub",
+    kind: "service",
+    source: "github.com",
+    description: "Source of truth for connected repository issues, PRs, and Actions runs.",
   },
 } as const satisfies Record<string, System>;
 
@@ -99,6 +112,10 @@ export const site = {
     ["mailAdapter", "mail"],
     ["web", "control"],
     ["control", "controlDatabase"],
+    ["worker", "control"],
+    ["control", "githubAdapter"],
+    ["githubAdapter", "github"],
+    ["github", "web"],
   ],
 } as const satisfies {
   name: string;

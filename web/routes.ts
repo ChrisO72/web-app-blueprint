@@ -10,12 +10,17 @@ export default [
   route("check-email", "routes/auth/check-email.tsx"),
   route("confirm-email", "routes/auth/confirm-email.tsx"),
 
+  route("webhooks/github", "routes/webhooks/github.ts"),
+
   // Protected routes
   layout("routes/layout.tsx", [
     index("routes/home.tsx"),
     layout("routes/control/layout.tsx", [
       route("control", "routes/control/index.tsx"),
       route("control/activity", "routes/control/activity.tsx"),
+      route("control/issues", "routes/control/issues.tsx"),
+      route("control/prs", "routes/control/prs.tsx"),
+      route("control/actions", "routes/control/actions.tsx"),
       route("control/settings", "routes/control/settings.tsx"),
     ]),
     route("account", "routes/account/index.tsx"),

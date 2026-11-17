@@ -31,7 +31,11 @@
     "test": "vitest run",
     "sentry": "node --import tsx telemetry/sentry/cli.ts",
     "sentry:upload": "node --import tsx telemetry/sentry/upload.ts",
-    "build:db": "node --import tsx db/build.ts"
+    "build:db": "node --import tsx db/build.ts",
+    "db:generate:control": "drizzle-kit generate --config=control/drizzle.config.ts",
+    "db:migrate:control": "node --import tsx control/db/migrate.ts",
+    "db:studio:control": "drizzle-kit studio --config=control/drizzle.config.ts",
+    "build:db:control": "node --import tsx control/db/build.ts"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1101.0",

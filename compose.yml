@@ -13,6 +13,7 @@ volumes:
 x-app-environment: &app-environment
   DATABASE_URL: postgresql://blueprint-user:blueprint-password@database:5432/blueprint
   CONTROL_DATABASE_URL: postgresql://control-user:control-password@control-database:5432/control
+  CONTROL_ENCRYPTION_KEY: ${CONTROL_ENCRYPTION_KEY:-}
   REDIS_URL: redis://redis:6379
   APP_URL: ${APP_URL:-http://localhost:5173}
   LETTERMINT_API_KEY: ${LETTERMINT_API_KEY:-}
@@ -123,6 +124,10 @@ services:
       SENTRY_REPLAYS_SESSION_SAMPLE_RATE: ${SENTRY_REPLAYS_SESSION_SAMPLE_RATE:-}
       SENTRY_REPLAYS_ON_ERROR_SAMPLE_RATE: ${SENTRY_REPLAYS_ON_ERROR_SAMPLE_RATE:-}
     depends_on: &app-dependencies
+      control-database:
+        condition: service_healthy
+      control-migrate:
+        condition: service_completed_successfully
       database:
         condition: service_healthy
       redis:
@@ -223,3 +228,15 @@ services:
       interval: 2s
       timeout: 5s
       retries: 15
+
+  control-migrate:
+    build:
+      context: .
+      dockerfile: control/db/Dockerfile.migrate
+    init: true
+    restart: "no"
+    environment:
+      CONTROL_DATABASE_URL: postgresql://control-user:control-password@control-database:5432/control
+    depends_on:
+      control-database:
+        condition: service_healthy

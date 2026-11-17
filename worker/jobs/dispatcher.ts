@@ -1,3 +1,6 @@
+import { DelayedError } from "bullmq";
+import { GitHubApiError } from "~/integrations/github/client.server";
+import { handleSyncGithubJob, syncGithubJobName, type GitHubSyncJobData } from "./sync-github";
 import type { Job } from "bullmq";
 import { consumeJob } from "~/telemetry/queue.server";
 import {
@@ -17,6 +20,7 @@ import {
 } from "./send-password-reset-email";
 
 export type JobData = {
+  [syncGithubJobName]: GitHubSyncJobData;
   [expirePendingFileUploadJobName]: ExpirePendingFileUploadJobData;
   [sendConfirmationEmailJobName]: SendConfirmationEmailJobData;
   [sendPasswordResetEmailJobName]: SendPasswordResetEmailJobData;
@@ -28,8 +32,9 @@ type TypedJob = {
   [Name in JobName]: Job<JobData[Name], void, Name>;
 }[JobName];
 
-export async function processJob(job: Job<JobData[JobName], void, JobName>) {
+export async function processJob(job: Job<JobData[JobName], void, JobName>, token?: string) {
   const known = [
+    syncGithubJobName,
     expirePendingFileUploadJobName,
     sendConfirmationEmailJobName,
     sendPasswordResetEmailJobName,
@@ -42,6 +47,17 @@ export async function processJob(job: Job<JobData[JobName], void, JobName>) {
     async () => {
       const typedJob = job as TypedJob;
       switch (typedJob.name) {
+        case syncGithubJobName:
+          try {
+            await handleSyncGithubJob(typedJob.data);
+          } catch (error) {
+            if (error instanceof GitHubApiError && error.retryAfterMs > 0) {
+              await job.moveToDelayed(Date.now() + error.retryAfterMs, token);
+              throw new DelayedError();
+            }
+            throw error;
+          }
+          break;
         case expirePendingFileUploadJobName:
           await handleExpirePendingFileUploadJob(typedJob.data);
           break;

@@ -4,6 +4,9 @@ import { Navbar, NavbarItem, NavbarSection } from "~/web/components/ui-kit/navba
 const tabs = [
   { name: "Overview", href: "/control" },
   { name: "Activity", href: "/control/activity" },
+  { name: "Issues", href: "/control/issues" },
+  { name: "PRs", href: "/control/prs" },
+  { name: "Actions", href: "/control/actions" },
   { name: "Settings", href: "/control/settings" },
 ] as const;
 
