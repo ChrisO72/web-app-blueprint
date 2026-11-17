@@ -21,6 +21,9 @@ import {
   type TelemetryIssue,
 } from "../telemetry";
 
+import { renderResourceName } from "../render";
+import { ServiceMetrics } from "./service-metrics";
+
 const date = (value: string) => new Date(value).toLocaleString();
 
 function LogRow({ log }: { log: TelemetryLog }) {
@@ -97,6 +100,10 @@ export function ServicePanel({
   onClose: () => void;
   defaultEnvironment: string;
 }) {
+  const metricsAvailable = Boolean(renderResourceName(node));
+  const [tab, setTab] = useState<"metrics" | "logs" | "errors">(
+    metricsAvailable ? "metrics" : "logs",
+  );
   const [filters, setFilters] = useState(() =>
     telemetryQuerySchema.parse({ node, environment: defaultEnvironment }),
   );
@@ -107,8 +114,8 @@ export function ServicePanel({
   const key = telemetryQueryKey(filters);
   const url = `/control/telemetry?${key}`;
   useEffect(() => {
-    if (open && supported) void load(url);
-  }, [open, supported, load, url]);
+    if (open && supported && tab !== "metrics") void load(url);
+  }, [open, supported, tab, load, url]);
   const result = fetcher.data?.key === key || fetcher.data?.key === "" ? fetcher.data : undefined;
   const loading = supported && (fetcher.state !== "idle" || !result);
   const update = (values: Partial<TelemetryQuery>) =>
@@ -130,17 +137,29 @@ export function ServicePanel({
             <XMarkIcon />
           </Button>
         </div>
-        <Navbar className="mt-3" aria-label="Service telemetry">
+        <Navbar className="mt-3" aria-label="Service details">
           <NavbarSection>
-            {(["logs", "errors"] as const).map((tab) => (
-              <NavbarItem key={tab} current={filters.tab === tab} onClick={() => update({ tab })}>
-                {tab === "logs" ? "Logs" : "Errors"}
+            {metricsAvailable && (
+              <NavbarItem current={tab === "metrics"} onClick={() => setTab("metrics")}>
+                Metrics
+              </NavbarItem>
+            )}
+            {(["logs", "errors"] as const).map((telemetryTab) => (
+              <NavbarItem
+                key={telemetryTab}
+                current={tab === telemetryTab}
+                onClick={() => {
+                  setTab(telemetryTab);
+                  update({ tab: telemetryTab });
+                }}
+              >
+                {telemetryTab === "logs" ? "Logs" : "Errors"}
               </NavbarItem>
             ))}
           </NavbarSection>
         </Navbar>
       </div>
-      {supported && (
+      {supported && tab !== "metrics" && (
         <div className="shrink-0 space-y-4 border-b border-zinc-950/10 p-6 dark:border-white/10">
           <form
             className="flex gap-2"
@@ -252,8 +271,10 @@ export function ServicePanel({
           </div>
         </div>
       )}
-      <div className="min-h-0 flex-1 overflow-y-auto px-6" aria-busy={loading}>
-        {!supported ? (
+      <div className="min-h-0 flex-1 overflow-y-auto px-6" aria-busy={tab !== "metrics" && loading}>
+        {tab === "metrics" ? (
+          <ServiceMetrics node={node} active={open} />
+        ) : !supported ? (
           <Text className="py-8">No {filters.tab} available.</Text>
         ) : loading ? (
           <Text className="py-8" role="status">
@@ -275,7 +296,7 @@ export function ServicePanel({
           <Text className="py-8">No errors found for these filters.</Text>
         )}
       </div>
-      {supported && result?.state === "ready" && (
+      {tab !== "metrics" && supported && result?.state === "ready" && (
         <div className="flex shrink-0 items-center justify-between border-t border-zinc-950/10 p-6 dark:border-white/10">
           <Button
             outline

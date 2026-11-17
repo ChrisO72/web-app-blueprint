@@ -3,16 +3,19 @@ type System = {
   kind: "process" | "module" | "adapter" | "store" | "service";
   source: string;
   description: string;
+  renderResource?: string;
 };
 
 const systems = {
   web: {
+    renderResource: "web-app-blueprint-web",
     name: "Web",
     kind: "process",
     source: "web/",
     description: "React Router UI, server routes, and the admin Control room.",
   },
   worker: {
+    renderResource: "web-app-blueprint-worker",
     name: "Worker",
     kind: "process",
     source: "worker/",
@@ -25,12 +28,14 @@ const systems = {
     description: "Application data access for Web and Worker.",
   },
   database: {
+    renderResource: "web-app-blueprint-db",
     name: "PostgreSQL",
     kind: "store",
     source: "db/",
     description: "Users, sessions, organizations, items, and file metadata.",
   },
   redis: {
+    renderResource: "web-app-blueprint-queue",
     name: "Redis",
     kind: "store",
     source: "Redis",
@@ -49,6 +54,7 @@ const systems = {
     description: "Shared private object operations.",
   },
   storage: {
+    renderResource: "web-app-blueprint-storage",
     name: "S3 storage",
     kind: "store",
     source: "SeaweedFS / S3",
@@ -73,6 +79,7 @@ const systems = {
     description: "Admin-only Control room, GitHub synchronization, and mirror data access.",
   },
   controlDatabase: {
+    renderResource: "web-app-blueprint-control-db",
     name: "Control DB",
     kind: "store",
     source: "control/db/",

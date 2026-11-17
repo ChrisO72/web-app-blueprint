@@ -6,6 +6,27 @@ the place from which we oversee, manage, and improve everything.
 Admins open `/control` using their normal account. [../system.config.ts](../system.config.ts)
 defines the site map. GitHub records live in separate PostgreSQL at `127.0.0.1:55433`.
 
+## Render metrics
+
+The Web, Worker, storage, Redis, PostgreSQL, and Control DB panels open with a Metrics tab.
+It shows current CPU and memory usage, disk usage and connections where applicable, and
+public HTTP volume, 5xx errors, and p95 latency for web services. Outbound bandwidth covers
+the last 24 hours and arrives in delayed hourly buckets. Other metrics use the last hour;
+old samples and unavailable data are identified explicitly.
+
+Set `RENDER_API_KEY` and `RENDER_BLUEPRINT_ID` on the web server or in root `.env`.
+Find the Blueprint ID (`exs-…`) in its Render Dashboard URL. With scoped API keys, grant
+Blueprint and Monitoring read permissions for that workspace. Classic API keys inherit
+your account permissions. Never put the key in the shared environment group or browser settings.
+Compose passes these settings only to Web.
+
+Resource names in [../system.config.ts](../system.config.ts) match [../render.yaml](../render.yaml).
+Update `renderResource` if your deployed resources have different names. The selected Blueprint
+identifies the deployment; Sentry environment filters do not change these metrics. Reads are
+cached on the server for one minute and refresh every minute while the Metrics tab is open.
+This view requires no metrics database or OpenTelemetry collector. HTTP latency requires a
+Pro workspace or higher. See [Render metrics](https://render.com/docs/service-metrics).
+
 ## Logs and errors
 
 Click any system in the overview to open its panel. Web includes server and browser telemetry;
