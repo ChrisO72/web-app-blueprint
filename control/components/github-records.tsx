@@ -3,7 +3,8 @@ import type { listRecords } from "~/control/db/repositories/github.server";
 import { Heading } from "~/web/components/ui-kit/heading";
 import { Text, TextLink } from "~/web/components/ui-kit/text";
 import { Badge } from "~/web/components/ui-kit/badge";
-import { Button } from "~/web/components/ui-kit/button";
+import { Pagination } from "~/web/routes/items/Pagination";
+import { recordPageSizeOptions } from "~/control/pagination";
 import {
   Table,
   TableBody,
@@ -14,12 +15,28 @@ import {
 } from "~/web/components/ui-kit/table";
 
 type Props = Awaited<ReturnType<typeof listRecords>> & { title: string; base: string };
-export function GitHubRecords({ title, base, connection, records, page, pages }: Props) {
+export function GitHubRecords({
+  title,
+  base,
+  connection,
+  records,
+  page,
+  totalPages,
+  totalCount,
+  pageSize,
+}: Props) {
   return (
-    <>
-      <Heading>{title}</Heading>
+    <div className="flex min-h-0 min-w-0 flex-1 flex-col">
+      <Heading className="shrink-0">
+        {title}
+        {totalCount > 0 && (
+          <span className="ml-2 font-normal text-zinc-500 dark:text-zinc-400">
+            ({totalCount} total)
+          </span>
+        )}
+      </Heading>
       {!connection?.repositoryId ? (
-        <Text className="mt-4">
+        <Text className="mt-4 shrink-0">
           Connect a repository in{" "}
           <Link to="/control/settings" className="underline">
             Settings
@@ -28,11 +45,11 @@ export function GitHubRecords({ title, base, connection, records, page, pages }:
         </Text>
       ) : (
         <>
-          <Text className="mt-2">
+          <Text className="mt-2 shrink-0 break-words">
             {connection.owner}/{connection.name} · GitHub is the source of truth
           </Text>
           {connection.status !== "connected" && (
-            <Text className="mt-2">
+            <Text className="mt-2 shrink-0 break-words">
               Sync status: {connection.status}.{" "}
               <Link to="/control/settings" className="underline">
                 View connection
@@ -40,7 +57,7 @@ export function GitHubRecords({ title, base, connection, records, page, pages }:
             </Text>
           )}
           {records.length ? (
-            <div className="mt-6 overflow-x-auto">
+            <div className="mt-6 min-h-0 min-w-0 flex-1 overflow-auto">
               <Table>
                 <TableHead>
                   <TableRow>
@@ -89,31 +106,19 @@ export function GitHubRecords({ title, base, connection, records, page, pages }:
           ) : (
             <Text className="mt-6">No records yet.</Text>
           )}
-          <div className="mt-6 flex items-center gap-4">
-            {page > 1 ? (
-              <Button outline href={`${base}?page=${page - 1}`}>
-                Previous
-              </Button>
-            ) : (
-              <Button outline disabled>
-                Previous
-              </Button>
-            )}
-            <Text>
-              Page {page} of {pages}
-            </Text>
-            {page < pages ? (
-              <Button outline href={`${base}?page=${page + 1}`}>
-                Next
-              </Button>
-            ) : (
-              <Button outline disabled>
-                Next
-              </Button>
-            )}
-          </div>
+          {totalCount > 0 && (
+            <div className="shrink-0 overflow-x-auto">
+              <Pagination
+                currentPage={page}
+                totalPages={totalPages}
+                totalCount={totalCount}
+                limit={pageSize}
+                pageSizeOptions={recordPageSizeOptions}
+              />
+            </div>
+          )}
         </>
       )}
-    </>
+    </div>
   );
 }

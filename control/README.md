@@ -6,6 +6,23 @@ the place from which we oversee, manage, and improve everything.
 Admins open `/control` using their normal account. [../system.config.ts](../system.config.ts)
 defines the site map. GitHub records live in separate PostgreSQL at `127.0.0.1:55433`.
 
+## Logs and errors
+
+Click any system in the overview to open its panel. Web includes server and browser telemetry;
+Worker includes worker telemetry. Other systems currently show empty Logs and Errors tabs.
+Search and filter recorded logs or grouped errors, expand rows for context, and open issues in Sentry.
+
+Set `SENTRY_ORG`, `SENTRY_PROJECT`, and `SENTRY_READ_TOKEN` in root `.env` or on the web server.
+The read token needs `org:read`, `project:read`, and `event:read` access to that project. Keep it
+separate from `SENTRY_AGENT_TOKEN` and `SENTRY_UPLOAD_TOKEN`. `SENTRY_URL` optionally selects a
+regional or self-hosted API endpoint; it defaults to `https://sentry.io`. These read settings do
+not change the SDK's `SENTRY_DSN` ingestion target.
+
+Compose passes read settings only to Web. On Render, set them on the web service, not in the
+shared environment group. Without complete read settings, the panel displays setup guidance.
+The initial environment matches `SENTRY_ENVIRONMENT` (or `NODE_ENV`); use the environment filter
+to view another environment. Errors show occurrence counts and dates matching the selected filters.
+
 ## GitHub
 
 Set these in root `.env` before connecting:

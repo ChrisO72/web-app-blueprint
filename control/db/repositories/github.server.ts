@@ -187,15 +187,18 @@ export async function markUnavailable(connectionId: string, kind: RecordKind, gi
     .set({ unavailableAt: new Date() })
     .where(and(eq(table.connectionId, connectionId), eq(table.githubId, githubId)));
 }
-export async function listRecords(kind: RecordKind, page: number) {
+export async function listRecords(kind: RecordKind, page: number, pageSize: number) {
   const db = getDatabase();
   const connection = await getPublicConnection();
-  if (!connection?.repositoryId) return { connection, records: [], page: 1, pages: 1 };
+  if (!connection?.repositoryId) {
+    return { connection, records: [], page: 1, totalPages: 0, totalCount: 0, pageSize };
+  }
   const table = kind === "issue" ? githubIssues : kind === "pull" ? githubPulls : githubRuns;
   const where = and(eq(table.connectionId, connection.id), isNull(table.unavailableAt));
   const [total] = await db.select({ count: count() }).from(table).where(where);
-  const pages = Math.max(1, Math.ceil(total.count / 25));
-  const current = Math.min(page, pages);
+  const totalCount = total.count;
+  const totalPages = Math.ceil(totalCount / pageSize);
+  const current = Math.min(page, Math.max(1, totalPages));
   const columns = {
     githubId: table.githubId,
     title: table.title,
@@ -218,8 +221,8 @@ export async function listRecords(kind: RecordKind, page: number) {
           .from(githubRuns)
           .where(and(eq(githubRuns.connectionId, connection.id), isNull(githubRuns.unavailableAt)))
           .orderBy(desc(githubRuns.githubUpdatedAt), desc(githubRuns.githubId))
-          .limit(25)
-          .offset((current - 1) * 25)
+          .limit(pageSize)
+          .offset((current - 1) * pageSize)
       : kind === "pull"
         ? await db
             .select({
@@ -240,8 +243,8 @@ export async function listRecords(kind: RecordKind, page: number) {
               and(eq(githubPulls.connectionId, connection.id), isNull(githubPulls.unavailableAt)),
             )
             .orderBy(desc(githubPulls.githubUpdatedAt), desc(githubPulls.githubId))
-            .limit(25)
-            .offset((current - 1) * 25)
+            .limit(pageSize)
+            .offset((current - 1) * pageSize)
         : await db
             .select({
               ...columns,
@@ -258,7 +261,7 @@ export async function listRecords(kind: RecordKind, page: number) {
               and(eq(githubIssues.connectionId, connection.id), isNull(githubIssues.unavailableAt)),
             )
             .orderBy(desc(githubIssues.githubUpdatedAt), desc(githubIssues.githubId))
-            .limit(25)
-            .offset((current - 1) * 25);
-  return { connection, records, page: current, pages };
+            .limit(pageSize)
+            .offset((current - 1) * pageSize);
+  return { connection, records, page: current, totalPages, totalCount, pageSize };
 }

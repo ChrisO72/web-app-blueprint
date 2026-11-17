@@ -17,6 +17,7 @@ import {
   disconnect,
   publicError,
 } from "~/control/github.server";
+import { listRecords } from "~/control/db/repositories/github.server";
 import { CONNECTION_ID, TOKEN } from "~/integrations/github/test/fixtures";
 import type { Route } from "../routes/control/+types/index";
 
@@ -35,7 +36,14 @@ vi.mock("~/control/github.server", () => ({
   publicError: vi.fn(),
 }));
 vi.mock("~/control/db/repositories/github.server", () => ({
-  listRecords: vi.fn(async () => ({ connection: null, records: [], page: 1, pages: 1 })),
+  listRecords: vi.fn(async () => ({
+    connection: null,
+    records: [],
+    page: 1,
+    totalPages: 0,
+    totalCount: 0,
+    pageSize: 10,
+  })),
 }));
 
 function args(role: User["role"], path: string) {
@@ -87,6 +95,27 @@ describe.each([
       });
     },
   );
+});
+
+describe.each([
+  { path: "/control/issues", loader: issuesLoader, kind: "issue" },
+  { path: "/control/prs", loader: prsLoader, kind: "pull" },
+  { path: "/control/actions", loader: actionsLoader, kind: "run" },
+])("Control pagination ($path)", ({ path, loader, kind }) => {
+  it.each([
+    { query: "", page: 1, pageSize: 10 },
+    { query: "?page=3&pageSize=5", page: 3, pageSize: 5 },
+    { query: "?page=2&pageSize=25", page: 2, pageSize: 25 },
+    { query: "?page=2&pageSize=50", page: 2, pageSize: 50 },
+    { query: "?page=-1&pageSize=0", page: 1, pageSize: 10 },
+    { query: "?page=1.5&pageSize=12", page: 1, pageSize: 10 },
+    { query: "?page=1000001&pageSize=1000000", page: 1, pageSize: 10 },
+    { query: "?page=invalid&pageSize=invalid", page: 1, pageSize: 10 },
+  ])("validates $query before querying records", async ({ query, page, pageSize }) => {
+    vi.mocked(listRecords).mockClear();
+    await loader(args("admin", `${path}${query}`));
+    expect(listRecords).toHaveBeenCalledExactlyOnceWith(kind, page, pageSize);
+  });
 });
 
 describe("Control settings actions", () => {

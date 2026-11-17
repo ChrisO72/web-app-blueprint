@@ -37,6 +37,8 @@ const positions = {
   mail: [140, 571.5],
   control: [940, 177],
   controlDatabase: [940, 32],
+  sentryAdapter: [612.5, 477],
+  sentry: [550, 571.5],
   githubAdapter: [940, 477],
   github: [877.5, 571.5],
 } satisfies Record<SystemId, [number, number]>;
@@ -56,6 +58,10 @@ const paths = {
   "web-control": "M784 320 V304 H1002.5 V239.5",
   "control-controlDatabase": "M1002.5 177 V157",
   "worker-control": "M374 445 V460 H850 V208.25 H940",
+  "web-sentryAdapter": "M675 445 V477",
+  "worker-sentryAdapter": "M330 445 V468 H651 V477",
+  "control-sentryAdapter": "M940 192 H866 V508.25 H737.5",
+  "sentryAdapter-sentry": "M675 539.5 V571.5",
   "control-githubAdapter": "M1002.5 239.5 V477",
   "githubAdapter-github": "M1002.5 539.5 V571.5",
   "github-web": "M877.5 602.75 H830 V390 H800",
@@ -63,7 +69,13 @@ const paths = {
   [Connection in SiteConfig["connections"][number] as `${Connection[0]}-${Connection[1]}`]: string;
 };
 
-export function SiteMap({ site }: { site: SiteConfig }) {
+export function SiteMap({
+  site,
+  onSelect,
+}: {
+  site: SiteConfig;
+  onSelect: (node: SystemId) => void;
+}) {
   const id = useId();
   return (
     <div className="overflow-x-auto rounded-2xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-950">
@@ -100,13 +112,18 @@ export function SiteMap({ site }: { site: SiteConfig }) {
           const store = system.kind === "store";
           const process = system.kind === "process";
           return (
-            <g key={key} transform={`translate(${x} ${y})`}>
+            <g
+              key={key}
+              transform={`translate(${x} ${y})`}
+              className="group cursor-pointer"
+              onClick={() => onSelect(key as SystemId)}
+            >
               <title>{`${system.name}: ${system.description} (${system.source})`}</title>
               <rect
                 {...size}
                 rx="12"
                 strokeWidth="1.5"
-                className="fill-white stroke-zinc-200 dark:fill-zinc-950 dark:stroke-zinc-700"
+                className="fill-white stroke-zinc-200 group-hover:fill-zinc-50 group-hover:stroke-zinc-400 dark:fill-zinc-950 dark:stroke-zinc-700 dark:group-hover:fill-zinc-900 dark:group-hover:stroke-zinc-500"
               />
               <Icon
                 x="16"

@@ -78,6 +78,19 @@ const systems = {
     source: "control/db/",
     description: "Separate PostgreSQL for the GitHub connection, issues, PRs, and workflow runs.",
   },
+  sentryAdapter: {
+    name: "Sentry adapter",
+    kind: "adapter",
+    source: "telemetry/ + control/sentry.server.ts",
+    description:
+      "Browser, Web, and Worker telemetry reporting and read-only logs and errors for Control.",
+  },
+  sentry: {
+    name: "Sentry",
+    kind: "service",
+    source: "sentry.io",
+    description: "Hosted errors, logs, traces, metrics, and browser session replays.",
+  },
   githubAdapter: {
     name: "GitHub API",
     kind: "adapter",
@@ -113,6 +126,10 @@ export const site = {
     ["web", "control"],
     ["control", "controlDatabase"],
     ["worker", "control"],
+    ["web", "sentryAdapter"],
+    ["worker", "sentryAdapter"],
+    ["control", "sentryAdapter"],
+    ["sentryAdapter", "sentry"],
     ["control", "githubAdapter"],
     ["githubAdapter", "github"],
     ["github", "web"],
