@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useFetcher, useRevalidator } from "react-router";
 import { z } from "zod";
 import { requireAdmin } from "~/web/lib/session.server";
+import { env } from "~/web/env.server";
 import { parseForm, type ActionData } from "~/web/lib/form";
 import {
   settingsData,
@@ -50,7 +51,7 @@ export async function action({
   requireAdmin(context);
   if (request.method !== "POST") throw new Response("Method not allowed", { status: 405 });
   const origin = request.headers.get("origin");
-  if (origin && origin !== new URL(request.url).origin)
+  if (origin && origin !== new URL(env.APP_URL).origin)
     throw new Response("Forbidden", { status: 403 });
   const { data, fieldErrors } = parseForm(await request.formData(), formSchema);
   if (fieldErrors) return { fieldErrors };

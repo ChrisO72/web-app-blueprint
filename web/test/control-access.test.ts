@@ -1,6 +1,7 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { RouterContextProvider } from "react-router";
 import type { User } from "~/db/repositories/users";
+import { env } from "~/web/env.server";
 import { authenticatedUserContext } from "~/web/lib/session.server";
 import { loader as overviewLoader } from "~/web/routes/control/index";
 import { loader as activityLoader } from "~/web/routes/control/activity";
@@ -89,6 +90,10 @@ describe.each([
 });
 
 describe("Control settings actions", () => {
+  const initialAppUrl = env.APP_URL;
+  afterEach(() => {
+    env.APP_URL = initialAppUrl;
+  });
   beforeEach(() => {
     vi.clearAllMocks();
     vi.mocked(publicError).mockReturnValue("GitHub could not complete this operation.");
@@ -97,10 +102,12 @@ describe("Control settings actions", () => {
     role: User["role"],
     values: Record<string, string>,
     origin = "http://localhost:5173",
+    requestUrl = "http://localhost:5173/control/settings",
   ) {
     return {
       ...args(role, "/control/settings"),
-      request: new Request("http://localhost:5173/control/settings", {
+      url: new URL(requestUrl),
+      request: new Request(requestUrl, {
         method: "POST",
         headers: { origin },
         body: new URLSearchParams(values),
@@ -120,6 +127,33 @@ describe("Control settings actions", () => {
     await expect(
       settingsAction(
         actionArgs("admin", { intent: "validate", token: TOKEN }, "https://other.example"),
+      ),
+    ).rejects.toMatchObject({ status: 403 });
+    expect(saveToken).not.toHaveBeenCalled();
+  });
+  it("accepts the public HTTPS origin when the reverse proxy forwards over HTTP", async () => {
+    env.APP_URL = "https://web-app-blueprint-web.onrender.com";
+    const result = await settingsAction(
+      actionArgs(
+        "admin",
+        { intent: "validate", token: TOKEN },
+        env.APP_URL,
+        "http://web-app-blueprint-web.onrender.com/control/settings",
+      ),
+    );
+    expect(result).toEqual({ success: true });
+    expect(saveToken).toHaveBeenCalledWith(TOKEN);
+  });
+  it("rejects an internal origin even if it matches the forwarded request URL", async () => {
+    env.APP_URL = "https://web-app-blueprint-web.onrender.com";
+    await expect(
+      settingsAction(
+        actionArgs(
+          "admin",
+          { intent: "validate", token: TOKEN },
+          "http://web-app-blueprint-web.onrender.com",
+          "http://web-app-blueprint-web.onrender.com/control/settings",
+        ),
       ),
     ).rejects.toMatchObject({ status: 403 });
     expect(saveToken).not.toHaveBeenCalled();
