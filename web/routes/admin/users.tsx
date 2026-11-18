@@ -1,3 +1,5 @@
+import { DetailsPanel, DetailsPanelBody, DetailsFields } from "~/web/components/details-panel";
+import { useDetailsSelection } from "~/web/lib/use-details-selection";
 import type { Route } from "./+types/users";
 import { listUsers, softDeleteUser, updateUser } from "~/db/repositories/users";
 import { getOrganizationById, listOrganizations } from "~/db/repositories/organizations";
@@ -95,6 +97,7 @@ export async function action({ request, context }: Route.ActionArgs): Promise<Ac
 
 export default function AdminUsersPage({ loaderData }: Route.ComponentProps) {
   const { users, organizations, currentUserId } = loaderData;
+  const { selected, open, select, close } = useDetailsSelection(users, (u) => u.id);
   const deleteFetcher = useFetcher<typeof action>();
   useFetcherToast(deleteFetcher, {
     success: "User deleted",
@@ -135,7 +138,7 @@ export default function AdminUsersPage({ loaderData }: Route.ComponentProps) {
             </TableHead>
             <TableBody>
               {users.map((u) => (
-                <TableRow key={u.id}>
+                <TableRow key={u.id} onOpen={() => select(u)} title={`View ${u.email} details`}>
                   <TableCell className="font-medium">{u.id}</TableCell>
                   <TableCell>{u.email}</TableCell>
                   <TableCell>
@@ -170,6 +173,44 @@ export default function AdminUsersPage({ loaderData }: Route.ComponentProps) {
           </Table>
         </div>
       )}
+      <DetailsPanel
+        open={open}
+        onClose={close}
+        title={
+          selected
+            ? [selected.firstName, selected.lastName].filter(Boolean).join(" ") || selected.email
+            : "Details"
+        }
+        description="User details"
+      >
+        <DetailsPanelBody>
+          {selected && (
+            <DetailsFields
+              fields={[
+                { label: "ID", value: selected.id },
+                { label: "Email", value: selected.email },
+                { label: "First name", value: selected.firstName },
+                { label: "Last name", value: selected.lastName },
+                {
+                  label: "Organization",
+                  value: organizations.find(
+                    (organization) => organization.id === selected.organizationId,
+                  )?.name,
+                },
+                { label: "Role", value: selected.role },
+                {
+                  label: "Email confirmed",
+                  value: selected.emailConfirmedAt
+                    ? new Date(selected.emailConfirmedAt).toLocaleString()
+                    : "Not confirmed",
+                },
+                { label: "Created", value: new Date(selected.createdAt).toLocaleString() },
+                { label: "Updated", value: new Date(selected.updatedAt).toLocaleString() },
+              ]}
+            />
+          )}
+        </DetailsPanelBody>
+      </DetailsPanel>
     </div>
   );
 }

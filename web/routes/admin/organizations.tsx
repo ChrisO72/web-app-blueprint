@@ -1,3 +1,5 @@
+import { DetailsPanel, DetailsPanelBody, DetailsFields } from "~/web/components/details-panel";
+import { useDetailsSelection } from "~/web/lib/use-details-selection";
 import { EllipsisHorizontalIcon, PlusIcon } from "@heroicons/react/16/solid";
 import { useEffect, useRef, useState } from "react";
 import { useFetcher } from "react-router";
@@ -135,6 +137,10 @@ export async function action({
 
 export default function AdminOrganizationsPage({ loaderData }: Route.ComponentProps) {
   const { organizations, currentOrganizationId } = loaderData;
+  const { selected, open, select, close } = useDetailsSelection(
+    organizations,
+    (organization) => organization.id,
+  );
   const deleteFetcher = useFetcher<typeof action>();
   useFetcherToast(deleteFetcher, {
     success: "Organization deleted",
@@ -175,7 +181,11 @@ export default function AdminOrganizationsPage({ loaderData }: Route.ComponentPr
             </TableHead>
             <TableBody>
               {organizations.map((organization) => (
-                <TableRow key={organization.id}>
+                <TableRow
+                  key={organization.id}
+                  onOpen={() => select(organization)}
+                  title={`View ${organization.name} details`}
+                >
                   <TableCell className="font-medium">{organization.id}</TableCell>
                   <TableCell>{organization.name}</TableCell>
                   <TableCell>{organization.description || "-"}</TableCell>
@@ -203,6 +213,26 @@ export default function AdminOrganizationsPage({ loaderData }: Route.ComponentPr
           </Table>
         </div>
       )}
+      <DetailsPanel
+        open={open}
+        onClose={close}
+        title={selected ? selected.name : "Details"}
+        description="Organization details"
+      >
+        <DetailsPanelBody>
+          {selected && (
+            <DetailsFields
+              fields={[
+                { label: "ID", value: selected.id },
+                { label: "Description", value: selected.description || "No description." },
+                { label: "Users", value: selected.userCount },
+                { label: "Created", value: new Date(selected.createdAt).toLocaleString() },
+                { label: "Updated", value: new Date(selected.updatedAt).toLocaleString() },
+              ]}
+            />
+          )}
+        </DetailsPanelBody>
+      </DetailsPanel>
     </div>
   );
 }

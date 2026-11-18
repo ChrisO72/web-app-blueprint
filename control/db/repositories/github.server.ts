@@ -265,3 +265,81 @@ export async function listRecords(kind: RecordKind, page: number, pageSize: numb
             .offset((current - 1) * pageSize);
   return { connection, records, page: current, totalPages, totalCount, pageSize };
 }
+
+export async function getRecordDetails(kind: RecordKind, githubId: number) {
+  const connection = await getPublicConnection();
+  if (!connection?.repositoryId) return null;
+  const db = getDatabase();
+  const table = kind === "issue" ? githubIssues : kind === "pull" ? githubPulls : githubRuns;
+  const common = {
+    githubId: table.githubId,
+    createdAt: table.githubCreatedAt,
+    updatedAt: table.githubUpdatedAt,
+    syncedAt: table.syncedAt,
+  };
+  if (kind === "run") {
+    const [record] = await db
+      .select({
+        ...common,
+        workflow: githubRuns.workflow,
+        event: githubRuns.event,
+        branch: githubRuns.branch,
+        commitSha: githubRuns.commitSha,
+        runAttempt: githubRuns.runAttempt,
+        startedAt: githubRuns.startedAt,
+      })
+      .from(githubRuns)
+      .where(
+        and(
+          eq(githubRuns.connectionId, connection.id),
+          eq(githubRuns.githubId, githubId),
+          isNull(githubRuns.unavailableAt),
+        ),
+      )
+      .limit(1);
+    return record ? { ...record, kind: "run" as const } : null;
+  }
+  if (kind === "pull") {
+    const [record] = await db
+      .select({
+        ...common,
+        description: githubPulls.description,
+        author: githubPulls.author,
+        assignees: githubPulls.assignees,
+        stateReason: githubPulls.stateReason,
+        closedAt: githubPulls.closedAt,
+        headBranch: githubPulls.headBranch,
+        baseBranch: githubPulls.baseBranch,
+        mergedAt: githubPulls.mergedAt,
+      })
+      .from(githubPulls)
+      .where(
+        and(
+          eq(githubPulls.connectionId, connection.id),
+          eq(githubPulls.githubId, githubId),
+          isNull(githubPulls.unavailableAt),
+        ),
+      )
+      .limit(1);
+    return record ? { ...record, kind: "pull" as const } : null;
+  }
+  const [record] = await db
+    .select({
+      ...common,
+      description: githubIssues.description,
+      author: githubIssues.author,
+      assignees: githubIssues.assignees,
+      stateReason: githubIssues.stateReason,
+      closedAt: githubIssues.closedAt,
+    })
+    .from(githubIssues)
+    .where(
+      and(
+        eq(githubIssues.connectionId, connection.id),
+        eq(githubIssues.githubId, githubId),
+        isNull(githubIssues.unavailableAt),
+      ),
+    )
+    .limit(1);
+  return record ? { ...record, kind: "issue" as const } : null;
+}

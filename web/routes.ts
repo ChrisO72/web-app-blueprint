@@ -17,6 +17,7 @@ export default [
     index("routes/home.tsx"),
     layout("routes/control/layout.tsx", [
       route("control", "routes/control/index.tsx"),
+      route("control/record", "routes/control/record.ts"),
       route("control/metrics", "routes/control/metrics.ts"),
       route("control/telemetry", "routes/control/telemetry.ts"),
       route("control/activity", "routes/control/activity.tsx"),

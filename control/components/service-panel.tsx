@@ -1,9 +1,8 @@
 import { useEffect, useState } from "react";
 import { useFetcher } from "react-router";
-import { ArrowPathIcon, MagnifyingGlassIcon, XMarkIcon } from "@heroicons/react/16/solid";
+import { ArrowPathIcon, MagnifyingGlassIcon } from "@heroicons/react/16/solid";
 import { site, type SystemId } from "~/system.config";
-import { Drawer } from "~/web/components/ui-kit/drawer";
-import { DialogTitle } from "~/web/components/ui-kit/dialog";
+import { DetailsPanel, DetailsFields } from "~/web/components/details-panel";
 import { Button } from "~/web/components/ui-kit/button";
 import { Navbar, NavbarItem, NavbarSection } from "~/web/components/ui-kit/navbar";
 import { Field, Label } from "~/web/components/ui-kit/fieldset";
@@ -101,8 +100,8 @@ export function ServicePanel({
   defaultEnvironment: string;
 }) {
   const metricsAvailable = Boolean(renderResourceName(node));
-  const [tab, setTab] = useState<"metrics" | "logs" | "errors">(
-    metricsAvailable ? "metrics" : "logs",
+  const [tab, setTab] = useState<"details" | "metrics" | "logs" | "errors">(
+    metricsAvailable ? "metrics" : "details",
   );
   const [filters, setFilters] = useState(() =>
     telemetryQuerySchema.parse({ node, environment: defaultEnvironment }),
@@ -111,11 +110,12 @@ export function ServicePanel({
   const fetcher = useFetcher<TelemetryResponse>();
   const { load } = fetcher;
   const supported = hasTelemetry(node);
+  const telemetryActive = tab === "logs" || tab === "errors";
   const key = telemetryQueryKey(filters);
   const url = `/control/telemetry?${key}`;
   useEffect(() => {
-    if (open && supported && tab !== "metrics") void load(url);
-  }, [open, supported, tab, load, url]);
+    if (open && supported && telemetryActive) void load(url);
+  }, [open, supported, telemetryActive, load, url]);
   const result = fetcher.data?.key === key || fetcher.data?.key === "" ? fetcher.data : undefined;
   const loading = supported && (fetcher.state !== "idle" || !result);
   const update = (values: Partial<TelemetryQuery>) =>
@@ -126,17 +126,12 @@ export function ServicePanel({
     .filter(Boolean)
     .sort();
   return (
-    <Drawer open={open} onClose={onClose}>
-      <div className="shrink-0 border-b border-zinc-950/10 px-6 pt-6 dark:border-white/10">
-        <div className="flex items-start justify-between gap-4">
-          <div>
-            <DialogTitle>{site.systems[node].name}</DialogTitle>
-            <Text className="mt-1">{site.systems[node].description}</Text>
-          </div>
-          <Button plain onClick={onClose} aria-label="Close panel">
-            <XMarkIcon />
-          </Button>
-        </div>
+    <DetailsPanel
+      open={open}
+      onClose={onClose}
+      title={site.systems[node].name}
+      description={site.systems[node].description}
+      header={
         <Navbar className="mt-3" aria-label="Service details">
           <NavbarSection>
             {metricsAvailable && (
@@ -144,6 +139,9 @@ export function ServicePanel({
                 Metrics
               </NavbarItem>
             )}
+            <NavbarItem current={tab === "details"} onClick={() => setTab("details")}>
+              Details
+            </NavbarItem>
             {(["logs", "errors"] as const).map((telemetryTab) => (
               <NavbarItem
                 key={telemetryTab}
@@ -158,8 +156,9 @@ export function ServicePanel({
             ))}
           </NavbarSection>
         </Navbar>
-      </div>
-      {supported && tab !== "metrics" && (
+      }
+    >
+      {supported && telemetryActive && (
         <div className="shrink-0 space-y-4 border-b border-zinc-950/10 p-6 dark:border-white/10">
           <form
             className="flex gap-2"
@@ -271,8 +270,33 @@ export function ServicePanel({
           </div>
         </div>
       )}
-      <div className="min-h-0 flex-1 overflow-y-auto px-6" aria-busy={tab !== "metrics" && loading}>
-        {tab === "metrics" ? (
+      <div className="min-h-0 flex-1 overflow-y-auto px-6" aria-busy={telemetryActive && loading}>
+        {tab === "details" ? (
+          <div className="py-6">
+            <DetailsFields
+              fields={[
+                { label: "Type", value: site.systems[node].kind },
+                { label: "Source", value: site.systems[node].source },
+                {
+                  label: "Connects to",
+                  value:
+                    site.connections
+                      .filter(([from]) => from === node)
+                      .map(([, to]) => site.systems[to].name)
+                      .join(", ") || "None",
+                },
+                {
+                  label: "Connected from",
+                  value:
+                    site.connections
+                      .filter(([, to]) => to === node)
+                      .map(([from]) => site.systems[from].name)
+                      .join(", ") || "None",
+                },
+              ]}
+            />
+          </div>
+        ) : tab === "metrics" ? (
           <ServiceMetrics node={node} active={open} />
         ) : !supported ? (
           <Text className="py-8">No {filters.tab} available.</Text>
@@ -296,7 +320,7 @@ export function ServicePanel({
           <Text className="py-8">No errors found for these filters.</Text>
         )}
       </div>
-      {tab !== "metrics" && supported && result?.state === "ready" && (
+      {telemetryActive && supported && result?.state === "ready" && (
         <div className="flex shrink-0 items-center justify-between border-t border-zinc-950/10 p-6 dark:border-white/10">
           <Button
             outline
@@ -314,6 +338,6 @@ export function ServicePanel({
           </Button>
         </div>
       )}
-    </Drawer>
+    </DetailsPanel>
   );
 }

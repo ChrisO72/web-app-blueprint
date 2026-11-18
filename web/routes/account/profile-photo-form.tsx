@@ -14,7 +14,7 @@ import { ErrorMessage, Field, Label } from "~/web/components/ui-kit/fieldset";
 import { Text } from "~/web/components/ui-kit/text";
 import { UserAvatar, type AvatarUser } from "~/web/components/user-avatar";
 import { AVATAR_CONTENT_TYPES, MAX_AVATAR_BYTES } from "~/web/lib/avatar";
-import { SettingsRow } from "./account-forms";
+import { SettingsRow } from "~/web/components/settings-row";
 import type { AccountActionData } from "./index";
 import { useFetcherToast } from "~/web/lib/use-fetcher-toast";
 import { useOperationToast } from "~/web/lib/use-operation-toast";

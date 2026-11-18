@@ -1,35 +1,14 @@
-import type { ReactNode } from "react";
 import { useFetcher } from "react-router";
 import { FieldError } from "~/web/components/field-error";
 import { FormError } from "~/web/components/form-error";
+import { SettingsRow } from "~/web/components/settings-row";
 import { Button } from "~/web/components/ui-kit/button";
 import { Field, Label } from "~/web/components/ui-kit/fieldset";
-import { Subheading } from "~/web/components/ui-kit/heading";
 import { Input } from "~/web/components/ui-kit/input";
 import { Text } from "~/web/components/ui-kit/text";
 import type { AvatarUser } from "~/web/components/user-avatar";
 import type { AccountActionData } from "./index";
 import { useFetcherToast } from "~/web/lib/use-fetcher-toast";
-
-export function SettingsRow({
-  title,
-  description,
-  children,
-}: {
-  title: string;
-  description: string;
-  children: ReactNode;
-}) {
-  return (
-    <section className="grid grid-cols-1 gap-6 py-8 sm:grid-cols-2 sm:gap-8" aria-label={title}>
-      <div>
-        <Subheading>{title}</Subheading>
-        <Text className="mt-1">{description}</Text>
-      </div>
-      <div className="min-w-0">{children}</div>
-    </section>
-  );
-}
 
 export function PersonalDetailsForm({ user }: { user: AvatarUser }) {
   const fetcher = useFetcher<AccountActionData>();

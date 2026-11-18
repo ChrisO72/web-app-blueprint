@@ -1,3 +1,5 @@
+import { DetailsPanel, DetailsPanelBody, DetailsFields } from "~/web/components/details-panel";
+import { useDetailsSelection } from "~/web/lib/use-details-selection";
 import type { Route } from "./+types/index";
 import {
   listItemsByOrgPaginated,
@@ -102,6 +104,7 @@ export async function action({
 
 export default function ItemsPage({ loaderData }: Route.ComponentProps) {
   const { items, page, totalPages, totalCount, pageSize, pageSizeOptions } = loaderData;
+  const { selected, open, select, close } = useDetailsSelection(items, (item) => item.id);
   const deleteFetcher = useFetcher<typeof action>();
   useFetcherToast(deleteFetcher, {
     success: "Item deleted",
@@ -143,7 +146,11 @@ export default function ItemsPage({ loaderData }: Route.ComponentProps) {
               </TableHead>
               <TableBody>
                 {items.map((item) => (
-                  <TableRow key={item.id}>
+                  <TableRow
+                    key={item.id}
+                    onOpen={() => select(item)}
+                    title={`View ${item.title} details`}
+                  >
                     <TableCell className="font-medium">{item.id}</TableCell>
                     <TableCell>{item.title}</TableCell>
                     <TableCell>{item.description || "-"}</TableCell>
@@ -151,7 +158,7 @@ export default function ItemsPage({ loaderData }: Route.ComponentProps) {
                     <TableCell>{item.priority || 0}</TableCell>
                     <TableCell>
                       <ItemActions
-                        itemId={item.id}
+                        onView={() => select(item)}
                         deleting={deleteFetcher.state !== "idle"}
                         onDelete={() => {
                           void deleteFetcher.submit({ id: String(item.id) }, { method: "DELETE" });
@@ -174,16 +181,37 @@ export default function ItemsPage({ loaderData }: Route.ComponentProps) {
           </div>
         </>
       )}
+      <DetailsPanel
+        open={open}
+        onClose={close}
+        title={selected ? selected.title : "Details"}
+        description="Item details"
+      >
+        <DetailsPanelBody>
+          {selected && (
+            <DetailsFields
+              fields={[
+                { label: "ID", value: selected.id },
+                { label: "Status", value: selected.status },
+                { label: "Priority", value: selected.priority ?? 0 },
+                { label: "Description", value: selected.description || "No description." },
+                { label: "Created", value: new Date(selected.createdAt).toLocaleString() },
+                { label: "Updated", value: new Date(selected.updatedAt).toLocaleString() },
+              ]}
+            />
+          )}
+        </DetailsPanelBody>
+      </DetailsPanel>
     </div>
   );
 }
 
 function ItemActions({
-  itemId,
+  onView,
   deleting,
   onDelete,
 }: {
-  itemId: number;
+  onView: () => void;
   deleting: boolean;
   onDelete: () => void;
 }) {
@@ -193,7 +221,7 @@ function ItemActions({
         <EllipsisHorizontalIcon data-slot="icon" />
       </DropdownButton>
       <DropdownMenu>
-        <DropdownItem href={`/items/${itemId}`}>View</DropdownItem>
+        <DropdownItem onClick={onView}>View</DropdownItem>
         <DropdownItem onClick={onDelete} disabled={deleting}>
           Delete
         </DropdownItem>

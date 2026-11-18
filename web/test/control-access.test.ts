@@ -8,6 +8,7 @@ import { loader as activityLoader } from "~/web/routes/control/activity";
 import { action as settingsAction, loader as settingsLoader } from "~/web/routes/control/settings";
 import { loader as issuesLoader } from "~/web/routes/control/issues";
 import { loader as prsLoader } from "~/web/routes/control/prs";
+import { loader as recordLoader } from "~/web/routes/control/record";
 import { loader as actionsLoader } from "~/web/routes/control/actions";
 import {
   saveToken,
@@ -17,7 +18,7 @@ import {
   disconnect,
   publicError,
 } from "~/control/github.server";
-import { listRecords } from "~/control/db/repositories/github.server";
+import { getRecordDetails, listRecords } from "~/control/db/repositories/github.server";
 import { CONNECTION_ID, TOKEN } from "~/integrations/github/test/fixtures";
 import type { Route } from "../routes/control/+types/index";
 
@@ -36,6 +37,7 @@ vi.mock("~/control/github.server", () => ({
   publicError: vi.fn(),
 }));
 vi.mock("~/control/db/repositories/github.server", () => ({
+  getRecordDetails: vi.fn(async () => null),
   listRecords: vi.fn(async () => ({
     connection: null,
     records: [],
@@ -78,6 +80,7 @@ describe.each([
   { path: "/control/issues", loader: issuesLoader },
   { path: "/control/prs", loader: prsLoader },
   { path: "/control/actions", loader: actionsLoader },
+  { path: "/control/record?kind=issue&githubId=123", loader: recordLoader },
 ])("Control access ($path)", ({ path, loader }) => {
   it("allows the existing application admin", async () => {
     expect(await loader(args("admin", path))).not.toBeUndefined();
@@ -219,5 +222,48 @@ describe("Control settings actions", () => {
     const result = await settingsAction(actionArgs("admin", { intent: "validate", token: TOKEN }));
     expect(result.formError).toBe("GitHub could not complete this operation.");
     expect(JSON.stringify(result)).not.toContain(TOKEN);
+  });
+});
+
+describe("Control record details", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it.each(["issue", "pull", "run"] as const)(
+    "loads a %s only after admin authorization",
+    async (kind) => {
+      await recordLoader(args("admin", `/control/record?kind=${kind}&githubId=123`));
+      expect(getRecordDetails).toHaveBeenCalledExactlyOnceWith(kind, 123);
+    },
+  );
+
+  it.each(["user", "viewer"] as const)("blocks %s before reading details", async (role) => {
+    await expect(
+      recordLoader(args(role, "/control/record?kind=issue&githubId=123")),
+    ).rejects.toMatchObject({ status: 302 });
+    expect(getRecordDetails).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    "",
+    "?kind=unknown&githubId=123",
+    "?kind=issue&githubId=-1",
+    "?kind=pull&githubId=1.5",
+    "?kind=run&githubId=9007199254740992",
+  ])("rejects invalid query %s", async (query) => {
+    const result = await recordLoader(args("admin", `/control/record${query}`));
+    expect(result.record).toBeNull();
+    expect(result.message).toBe("Invalid record.");
+    expect(getRecordDetails).not.toHaveBeenCalled();
+  });
+
+  it("reports a record removed from the mirror", async () => {
+    const result = await recordLoader(args("admin", "/control/record?kind=issue&githubId=123"));
+    expect(result).toEqual({
+      key: "issue:123",
+      record: null,
+      message: "This record is no longer available.",
+    });
   });
 });

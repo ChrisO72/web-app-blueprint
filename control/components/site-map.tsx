@@ -82,7 +82,7 @@ export function SiteMap({
       <svg
         viewBox="0 0 1200 670"
         className="mx-auto block h-auto w-full max-w-[1200px] min-w-[960px]"
-        role="img"
+        role="group"
         aria-labelledby={`${id}-title ${id}-description`}
       >
         <title id={`${id}-title`}>{site.name} site map</title>
@@ -115,7 +115,17 @@ export function SiteMap({
             <g
               key={key}
               transform={`translate(${x} ${y})`}
-              className="group cursor-pointer"
+              role="button"
+              tabIndex={0}
+              aria-label={`View ${system.name} details`}
+              aria-haspopup="dialog"
+              onKeyDown={(event) => {
+                if (event.key === "Enter" || event.key === " ") {
+                  event.preventDefault();
+                  onSelect(key as SystemId);
+                }
+              }}
+              className="group cursor-pointer focus-visible:outline-2 focus-visible:outline-blue-500"
               onClick={() => onSelect(key as SystemId)}
             >
               <title>{`${system.name}: ${system.description} (${system.source})`}</title>

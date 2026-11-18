@@ -27,6 +27,16 @@ export function ItemsHeader({ onCreate }: ItemsHeaderProps) {
 Use [routes/items/index.tsx](routes/items/index.tsx) for the table, pagination, and action-menu
 example. The [route guide](routes.md#route-module-template) owns the form and validation template.
 
+## Entity details
+
+Use `DetailsPanel`, `DetailsPanelBody`, and `DetailsFields` from
+[components/details-panel.tsx](components/details-panel.tsx) for slide-in entity details.
+Pass `onOpen` and an accessible `title` to a `TableRow` to open its panel on click or keyboard
+activation. Links, menus, and form controls in the row keep their own behavior. Use
+`useDetailsSelection` from [lib/use-details-selection.ts](lib/use-details-selection.ts) to keep
+the selected entity in sync with loader data. Control service panels use the same shell and
+supply their tabs through `header`.
+
 ## Styling
 
 - Tailwind v4 tokens live in [app.css](app.css); there is no `tailwind.config.js`.

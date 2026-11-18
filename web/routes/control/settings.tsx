@@ -13,7 +13,8 @@ import {
   disconnect,
   publicError,
 } from "~/control/github.server";
-import { Heading, Subheading } from "~/web/components/ui-kit/heading";
+import { Heading } from "~/web/components/ui-kit/heading";
+import { SettingsRow } from "~/web/components/settings-row";
 import { Text, TextLink } from "~/web/components/ui-kit/text";
 import { Button } from "~/web/components/ui-kit/button";
 import { Input } from "~/web/components/ui-kit/input";
@@ -99,7 +100,7 @@ export default function Settings({ loaderData }: Route.ComponentProps) {
     return () => clearInterval(interval);
   }, [connection?.status, revalidate]);
   const tokenForm = (intent: "validate" | "replace") => (
-    <fetcher.Form method="post" className="mt-6 space-y-4">
+    <fetcher.Form method="post" className="space-y-4">
       <input type="hidden" name="intent" value={intent} />
       {connection && <input type="hidden" name="connectionId" value={connection.id} />}
       <Field>
@@ -119,142 +120,159 @@ export default function Settings({ loaderData }: Route.ComponentProps) {
         </Description>
         <FieldError name="token" actionData={fetcher.data} />
       </Field>
-      <Button type="submit" disabled={busy || !setup.ready}>
-        {intent === "validate" ? "Validate token" : "Replace token"}
-      </Button>
+      <div className="flex justify-end">
+        <Button type="submit" disabled={busy || !setup.ready}>
+          {intent === "validate" ? "Validate token" : "Replace token"}
+        </Button>
+      </div>
     </fetcher.Form>
   );
   return (
-    <div className="max-w-3xl">
+    <div className="max-w-4xl">
       <Heading>Settings</Heading>
-      <Subheading className="mt-8">GitHub</Subheading>
-      <Text className="mt-2">
-        Connect one repository to mirror its issues, pull requests, and Actions runs.
-      </Text>
-      {!setup.ready && (
-        <p role="status" className="mt-4 text-sm text-amber-700 dark:text-amber-400">
-          {setup.error}
-        </p>
-      )}
-      <div className="mt-4">
-        <FormError actionData={fetcher.data} />
-      </div>
-      {error && (
-        <p role="status" className="mt-4 text-sm text-red-600 dark:text-red-400">
-          {error}
-        </p>
-      )}
-      {!connection ? (
-        tokenForm("validate")
-      ) : (
-        <>
-          <div className="mt-6 space-y-3">
-            <div className="flex flex-wrap items-center gap-3">
-              {connection.url ? (
-                <TextLink href={connection.url} target="_blank" rel="noreferrer">
-                  {connection.owner}/{connection.name}
-                </TextLink>
-              ) : (
-                <Text>Authenticated as {connection.login}</Text>
-              )}
-              <Badge
-                color={
-                  connection.status === "connected"
-                    ? "emerald"
-                    : connection.status === "error"
-                      ? "red"
-                      : connection.status === "syncing"
-                        ? "blue"
-                        : "zinc"
-                }
-              >
-                {connection.status}
-              </Badge>
-            </div>
-            <Text>
-              Last successful sync:{" "}
-              {connection.lastSyncedAt
-                ? new Date(connection.lastSyncedAt).toLocaleString()
-                : "Not yet"}
-            </Text>
-            <Text>
-              Last webhook:{" "}
-              {connection.lastWebhookAt
-                ? new Date(connection.lastWebhookAt).toLocaleString()
-                : "Not yet"}
-            </Text>
-            {connection.lastError && (
-              <p role="status" className="text-sm text-red-600 dark:text-red-400">
-                {connection.lastError}
+      <div className="mt-6 divide-y divide-zinc-950/10 border-t border-zinc-950/10 dark:divide-white/10 dark:border-white/10">
+        <SettingsRow
+          title="GitHub"
+          description="Connect one repository to mirror its issues, pull requests, and Actions runs."
+        >
+          <div className="space-y-6">
+            {!setup.ready && (
+              <p role="status" className="text-sm text-amber-700 dark:text-amber-400">
+                {setup.error}
               </p>
             )}
-          </div>
-          {!connection.webhookId && (
-            <fetcher.Form method="post" className="mt-6 space-y-4">
-              <input type="hidden" name="intent" value="connect" />
-              <input type="hidden" name="connectionId" value={connection.id} />
-              <Field>
-                <Label>Repository</Label>
-                {connection.repositoryId ? (
-                  <>
-                    <Text>
-                      {connection.owner}/{connection.name}
-                    </Text>
-                    <input type="hidden" name="repositoryId" value={connection.repositoryId} />
-                  </>
-                ) : (
-                  <Select
-                    name="repositoryId"
-                    required
-                    disabled={busy || !setup.ready || !repositories.length}
-                    defaultValue=""
-                  >
-                    <option value="" disabled>
-                      Select a repository
-                    </option>
-                    {repositories.map((repo) => (
-                      <option key={repo.id} value={repo.id}>
-                        {repo.fullName}
-                      </option>
-                    ))}
-                  </Select>
-                )}
-                <FieldError name="repositoryId" actionData={fetcher.data} />
-              </Field>
-              <Button type="submit" disabled={busy || !setup.ready}>
-                Connect
-              </Button>
-            </fetcher.Form>
-          )}
-          <div className="mt-6 flex gap-3">
-            {connection.webhookId && (
-              <fetcher.Form method="post">
-                <input type="hidden" name="intent" value="sync" />
-                <input type="hidden" name="connectionId" value={connection.id} />
-                <Button
-                  type="submit"
-                  disabled={busy || !setup.ready || connection.status === "syncing"}
-                >
-                  Sync now
-                </Button>
-              </fetcher.Form>
+            <div>
+              <FormError actionData={fetcher.data} />
+            </div>
+            {error && (
+              <p role="status" className="text-sm text-red-600 dark:text-red-400">
+                {error}
+              </p>
             )}
-            <fetcher.Form method="post">
-              <input type="hidden" name="intent" value="disconnect" />
-              <input type="hidden" name="connectionId" value={connection.id} />
-              <Button outline type="submit" disabled={busy}>
-                Disconnect
-              </Button>
-            </fetcher.Form>
+            {!connection ? (
+              tokenForm("validate")
+            ) : (
+              <>
+                <div className="space-y-3">
+                  <div className="flex flex-wrap items-center gap-3">
+                    {connection.url ? (
+                      <TextLink href={connection.url} target="_blank" rel="noreferrer">
+                        {connection.owner}/{connection.name}
+                      </TextLink>
+                    ) : (
+                      <Text>Authenticated as {connection.login}</Text>
+                    )}
+                    <Badge
+                      color={
+                        connection.status === "connected"
+                          ? "emerald"
+                          : connection.status === "error"
+                            ? "red"
+                            : connection.status === "syncing"
+                              ? "blue"
+                              : "zinc"
+                      }
+                    >
+                      {connection.status}
+                    </Badge>
+                  </div>
+                  <Text>
+                    Last successful sync:{" "}
+                    {connection.lastSyncedAt
+                      ? new Date(connection.lastSyncedAt).toLocaleString()
+                      : "Not yet"}
+                  </Text>
+                  <Text>
+                    Last webhook:{" "}
+                    {connection.lastWebhookAt
+                      ? new Date(connection.lastWebhookAt).toLocaleString()
+                      : "Not yet"}
+                  </Text>
+                  {connection.lastError && (
+                    <p role="status" className="text-sm text-red-600 dark:text-red-400">
+                      {connection.lastError}
+                    </p>
+                  )}
+                </div>
+                {!connection.webhookId && (
+                  <fetcher.Form method="post" className="mt-6 space-y-4">
+                    <input type="hidden" name="intent" value="connect" />
+                    <input type="hidden" name="connectionId" value={connection.id} />
+                    <Field>
+                      <Label>Repository</Label>
+                      {connection.repositoryId ? (
+                        <>
+                          <Text>
+                            {connection.owner}/{connection.name}
+                          </Text>
+                          <input
+                            type="hidden"
+                            name="repositoryId"
+                            value={connection.repositoryId}
+                          />
+                        </>
+                      ) : (
+                        <Select
+                          name="repositoryId"
+                          required
+                          disabled={busy || !setup.ready || !repositories.length}
+                          defaultValue=""
+                        >
+                          <option value="" disabled>
+                            Select a repository
+                          </option>
+                          {repositories.map((repo) => (
+                            <option key={repo.id} value={repo.id}>
+                              {repo.fullName}
+                            </option>
+                          ))}
+                        </Select>
+                      )}
+                      <FieldError name="repositoryId" actionData={fetcher.data} />
+                    </Field>
+                    <Button type="submit" disabled={busy || !setup.ready}>
+                      Connect
+                    </Button>
+                  </fetcher.Form>
+                )}
+                <div className="mt-6 flex gap-3">
+                  {connection.webhookId && (
+                    <fetcher.Form method="post">
+                      <input type="hidden" name="intent" value="sync" />
+                      <input type="hidden" name="connectionId" value={connection.id} />
+                      <Button
+                        type="submit"
+                        disabled={busy || !setup.ready || connection.status === "syncing"}
+                      >
+                        Sync now
+                      </Button>
+                    </fetcher.Form>
+                  )}
+                  <fetcher.Form method="post">
+                    <input type="hidden" name="intent" value="disconnect" />
+                    <input type="hidden" name="connectionId" value={connection.id} />
+                    <Button outline type="submit" disabled={busy}>
+                      Disconnect
+                    </Button>
+                  </fetcher.Form>
+                </div>
+              </>
+            )}
+            <Text>
+              GitHub remains the source of truth. Use Sync now to recover updates missed during
+              downtime.
+            </Text>
           </div>
-          <div className="mt-8 border-t border-zinc-950/10 pt-6 dark:border-white/10">
+        </SettingsRow>
+        {connection && (
+          <SettingsRow
+            title="Access token"
+            description="Replace the token used to access your GitHub repository."
+          >
             {tokenForm("replace")}
-          </div>
-        </>
-      )}
-      <Text className="mt-6">
-        GitHub remains the source of truth. Use Sync now to recover updates missed during downtime.
-      </Text>
+          </SettingsRow>
+        )}
+      </div>
     </div>
   );
 }
