@@ -3,7 +3,10 @@ import { createHmac } from "node:crypto";
 import { encryptSecret, decryptSecret, verifyWebhook, webhookUrl } from "../secrets.server";
 import { KEY, TOKEN } from "./fixtures";
 
-beforeEach(() => vi.stubEnv("CONTROL_ENCRYPTION_KEY", KEY));
+beforeEach(() => {
+  vi.stubEnv("CONTROL_ENCRYPTION_KEY", KEY);
+  vi.stubEnv("GITHUB_WEBHOOK_ORIGIN", "");
+});
 afterEach(() => vi.unstubAllEnvs());
 describe("GitHub secrets", () => {
   it("encrypts credentials with independent nonces and authenticates ciphertext", () => {
@@ -34,6 +37,13 @@ describe("GitHub secrets", () => {
     expect(webhookUrl()).toBe("https://control.example/webhooks/github");
     vi.stubEnv("APP_URL", "https://control.example/account?tab=profile");
     expect(webhookUrl()).toBe("https://control.example/webhooks/github");
+  });
+  it("uses the tunnel for webhooks while the app runs on localhost", () => {
+    vi.stubEnv("APP_URL", "http://localhost:5173");
+    vi.stubEnv("GITHUB_WEBHOOK_ORIGIN", "https://tunnel.example");
+    expect(webhookUrl()).toBe("https://tunnel.example/webhooks/github");
+    vi.stubEnv("GITHUB_WEBHOOK_ORIGIN", "http://tunnel.example");
+    expect(() => webhookUrl()).toThrow("GITHUB_WEBHOOK_ORIGIN");
   });
   it.each([
     "",

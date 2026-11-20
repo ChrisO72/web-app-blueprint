@@ -4,14 +4,18 @@ import { ControlNav } from "./control-nav";
 
 export default function ControlLayout() {
   const { pathname } = useLocation();
-  const isRecordsPage = ["/control/prs", "/control/issues", "/control/actions"].includes(
-    pathname.replace(/\/$/, ""),
-  );
+  const hasScrollableContent = [
+    "/control/prs",
+    "/control/issues",
+    "/control/actions",
+    "/control/docs",
+  ].includes(pathname.replace(/\/$/, ""));
 
   return (
     <div
       className={clsx(
-        isRecordsPage && "flex h-[calc(100dvh-8rem)] min-w-0 flex-col lg:h-[calc(100dvh-6rem)]",
+        hasScrollableContent &&
+          "flex h-[calc(100dvh-8rem)] min-w-0 flex-col lg:h-[calc(100dvh-6rem)]",
       )}
     >
       <div className="shrink-0 overflow-x-auto">

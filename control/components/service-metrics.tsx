@@ -1,81 +1,92 @@
-import { useEffect } from "react";
-import { useFetcher } from "react-router";
-import { ArrowPathIcon } from "@heroicons/react/16/solid";
-import type { SystemId } from "~/system.config";
+import { useEffect, useState } from "react";
+import { ArrowPathIcon, ChevronDownIcon } from "@heroicons/react/16/solid";
 import { Button } from "~/web/components/ui-kit/button";
+import { Subheading } from "~/web/components/ui-kit/heading";
 import { Text } from "~/web/components/ui-kit/text";
-import type { RenderMetrics } from "../render";
+import { useFetcher } from "react-router";
+import type { loader } from "~/web/routes/control/metrics";
+import type { SystemId } from "~/system.config";
+import { isStaleRenderMetric, renderRefreshInterval } from "../render";
 
-export function ServiceMetrics({ node, active }: { node: SystemId; active: boolean }) {
-  const fetcher = useFetcher<RenderMetrics>();
-  const { load } = fetcher;
-  const url = `/control/metrics?${new URLSearchParams({ node })}`;
+export function ServiceMetrics({ node, open }: { node: SystemId; open: boolean }) {
+  const [expanded, setExpanded] = useState(true);
+  const { load, data, state } = useFetcher<typeof loader>();
+  const url = `/control/metrics?node=${node}`;
+  const result = data && "node" in data && data.node === node ? data : undefined;
+  const loading = state !== "idle" || !result;
   useEffect(() => {
-    if (!active) return;
+    if (!open) return;
     void load(url);
     const interval = window.setInterval(() => {
       if (!document.hidden) void load(url);
-    }, 60_000);
+    }, renderRefreshInterval);
     return () => window.clearInterval(interval);
-  }, [active, load, url]);
-  const result = fetcher.data?.node === node ? fetcher.data : undefined;
-  const loading = fetcher.state !== "idle" || !result;
+  }, [load, open, url]);
   return (
-    <section className="py-6" aria-label="Render metrics" aria-busy={loading}>
-      <div className="mb-5 flex items-center justify-between gap-4">
-        <div>
-          <Text>Render deployment · last hour</Text>
-          {result?.fetchedAt && (
-            <Text className="text-xs!">
-              Fetched {new Date(result.fetchedAt).toLocaleTimeString()} · refreshes every minute
-            </Text>
-          )}
-        </div>
+    <section
+      aria-label="Render metrics"
+      className="border-b border-zinc-950/10 py-3 dark:border-white/10"
+    >
+      <div className="flex items-center justify-between gap-2">
+        <Subheading>
+          <button
+            type="button"
+            aria-expanded={expanded}
+            onClick={() => setExpanded((current) => !current)}
+            className="inline-flex cursor-pointer items-center gap-1.5 rounded-md focus-visible:outline-2 focus-visible:outline-blue-500"
+          >
+            <ChevronDownIcon
+              aria-hidden="true"
+              className={`size-4 text-zinc-500 ${expanded ? "" : "-rotate-90"}`}
+            />
+            Render metrics
+          </button>
+        </Subheading>
         <Button
-          outline
+          plain
+          type="button"
+          aria-label="Refresh Render metrics"
           disabled={loading}
-          aria-label="Refresh metrics"
           onClick={() => void load(url)}
         >
-          <ArrowPathIcon />
+          <ArrowPathIcon data-slot="icon" />
         </Button>
       </div>
-      {!result ? (
-        <Text role="status">Loading metrics…</Text>
-      ) : (
-        <>
-          {result.message && (
-            <Text className="mb-5" role="status">
+      {expanded && (
+        <div className="mt-2 space-y-2" aria-busy={loading}>
+          {!result && <Text role="status">Loading metrics…</Text>}
+          {result?.message && (
+            <Text className="text-xs!" role="status">
               {result.message}
             </Text>
           )}
-          <dl className="grid grid-cols-2 gap-3">
-            {result.metrics.map((metric) => {
-              const stale =
-                metric.sampledAt && Date.now() - Date.parse(metric.sampledAt) > 3 * 60_000;
-              return (
+          {result && result.metrics.length > 0 && (
+            <dl className="grid grid-cols-2 gap-1.5 sm:grid-cols-4">
+              {result.metrics.map((metric) => (
                 <div
                   key={metric.label}
-                  className="rounded-lg border border-zinc-950/10 p-4 dark:border-white/10"
+                  className="min-w-0 rounded-lg bg-zinc-50 px-2.5 py-2 dark:bg-white/5"
                 >
-                  <dt className="text-sm text-zinc-500 dark:text-zinc-400">{metric.label}</dt>
-                  <dd className="mt-1 text-xl font-semibold text-zinc-950 tabular-nums dark:text-white">
+                  <dt className="text-xs text-zinc-600 dark:text-zinc-400">{metric.label}</dt>
+                  <dd className="text-base/6 font-semibold wrap-anywhere text-zinc-950 tabular-nums dark:text-white">
                     {metric.value ?? "Unavailable"}
                   </dd>
-                  <dd className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">{metric.detail}</dd>
-                  {stale && metric.sampledAt && (
-                    <dd className="mt-2 text-xs text-amber-700 dark:text-amber-400">
-                      Last sample {new Date(metric.sampledAt).toLocaleString()}
+                  <dd className="text-xs wrap-anywhere text-zinc-600 dark:text-zinc-400">
+                    {metric.detail}
+                  </dd>
+                  {isStaleRenderMetric(metric, result.fetchedAt) && metric.sampledAt && (
+                    <dd className="mt-1 text-xs text-amber-700 dark:text-amber-400">
+                      Last sample{" "}
+                      <time dateTime={metric.sampledAt}>
+                        {new Date(metric.sampledAt).toLocaleString()}
+                      </time>
                     </dd>
                   )}
                 </div>
-              );
-            })}
-          </dl>
-          <Text className="mt-5 text-xs!">
-            Render metrics are independent of the Sentry environment filter.
-          </Text>
-        </>
+              ))}
+            </dl>
+          )}
+        </div>
       )}
     </section>
   );

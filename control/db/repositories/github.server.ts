@@ -1,4 +1,5 @@
-import { and, count, desc, eq, isNull, lt, lte, ne, or, sql } from "drizzle-orm";
+import { and, count, desc, eq, isNull, lt, lte, ne, or, sql, type SQLWrapper } from "drizzle-orm";
+import type { RecordQuery } from "~/control/pagination";
 import { getDatabase } from "../db.server";
 import {
   githubConnections,
@@ -187,83 +188,95 @@ export async function markUnavailable(connectionId: string, kind: RecordKind, gi
     .set({ unavailableAt: new Date() })
     .where(and(eq(table.connectionId, connectionId), eq(table.githubId, githubId)));
 }
-export async function listRecords(kind: RecordKind, page: number, pageSize: number) {
+function containsText(column: SQLWrapper, value: string) {
+  return sql`strpos(lower(${column}), lower(${value})) > 0`;
+}
+
+export async function listRecords(kind: RecordKind, query: RecordQuery) {
   const db = getDatabase();
   const connection = await getPublicConnection();
+  const { page, pageSize, q, status, scope } = query;
   if (!connection?.repositoryId) {
-    return { connection, records: [], page: 1, totalPages: 0, totalCount: 0, pageSize };
+    return { connection, records: [], page: 1, totalPages: 0, totalCount: 0, pageSize, query };
   }
   const table = kind === "issue" ? githubIssues : kind === "pull" ? githubPulls : githubRuns;
-  const where = and(eq(table.connectionId, connection.id), isNull(table.unavailableAt));
+  const number =
+    kind === "run"
+      ? githubRuns.runNumber
+      : kind === "pull"
+        ? githubPulls.number
+        : githubIssues.number;
+  const recordStatus =
+    kind === "run"
+      ? sql<string>`coalesce(${githubRuns.conclusion}, ${githubRuns.status})`
+      : kind === "pull"
+        ? sql<string>`case
+            when ${githubPulls.mergedAt} is not null then 'merged'
+            when ${githubPulls.draft} and ${githubPulls.state} = 'open' then 'draft'
+            else ${githubPulls.state}
+          end`
+        : sql<string>`${githubIssues.state}`;
+  const labels = kind === "pull" ? githubPulls.labels : githubIssues.labels;
+  const byScope = !scope
+    ? undefined
+    : kind === "run"
+      ? containsText(githubRuns.branch, scope)
+      : or(
+          sql`exists (
+            select 1 from jsonb_array_elements(${labels}) as labels(entry)
+            where strpos(lower(entry->>'name'), lower(${scope})) > 0
+          )`,
+          kind === "pull" ? containsText(githubPulls.headBranch, scope) : undefined,
+          kind === "pull" ? containsText(githubPulls.baseBranch, scope) : undefined,
+        );
+  const where = and(
+    eq(table.connectionId, connection.id),
+    isNull(table.unavailableAt),
+    status ? eq(recordStatus, status) : undefined,
+    q
+      ? or(
+          containsText(table.title, q),
+          /^#?\d+$/.test(q) ? sql`${number}::text = ${q.replace(/^#/, "")}` : undefined,
+        )
+      : undefined,
+    byScope,
+  );
   const [total] = await db.select({ count: count() }).from(table).where(where);
   const totalCount = total.count;
   const totalPages = Math.ceil(totalCount / pageSize);
   const current = Math.min(page, Math.max(1, totalPages));
-  const columns = {
-    githubId: table.githubId,
-    title: table.title,
-    url: table.url,
-    updatedAt: table.githubUpdatedAt,
-  };
-  const records =
-    kind === "run"
-      ? await db
-          .select({
-            ...columns,
-            number: githubRuns.runNumber,
-            state: githubRuns.status,
-            conclusion: githubRuns.conclusion,
-            branch: githubRuns.branch,
-            labels: sql<never[]>`'[]'::jsonb`,
-            draft: sql<boolean>`false`,
-            mergedAt: sql<null>`null`,
-          })
-          .from(githubRuns)
-          .where(and(eq(githubRuns.connectionId, connection.id), isNull(githubRuns.unavailableAt)))
-          .orderBy(desc(githubRuns.githubUpdatedAt), desc(githubRuns.githubId))
-          .limit(pageSize)
-          .offset((current - 1) * pageSize)
-      : kind === "pull"
-        ? await db
-            .select({
-              githubId: githubPulls.githubId,
-              title: githubPulls.title,
-              url: githubPulls.url,
-              updatedAt: githubPulls.githubUpdatedAt,
-              number: githubPulls.number,
-              state: githubPulls.state,
-              labels: githubPulls.labels,
-              draft: githubPulls.draft,
-              mergedAt: githubPulls.mergedAt,
-              conclusion: sql<null>`null`,
-              branch: githubPulls.headBranch,
-            })
-            .from(githubPulls)
-            .where(
-              and(eq(githubPulls.connectionId, connection.id), isNull(githubPulls.unavailableAt)),
-            )
-            .orderBy(desc(githubPulls.githubUpdatedAt), desc(githubPulls.githubId))
-            .limit(pageSize)
-            .offset((current - 1) * pageSize)
-        : await db
-            .select({
-              ...columns,
-              number: githubIssues.number,
-              state: githubIssues.state,
-              labels: githubIssues.labels,
-              draft: sql<boolean>`false`,
-              mergedAt: sql<null>`null`,
-              conclusion: sql<null>`null`,
-              branch: sql<null>`null`,
-            })
-            .from(githubIssues)
-            .where(
-              and(eq(githubIssues.connectionId, connection.id), isNull(githubIssues.unavailableAt)),
-            )
-            .orderBy(desc(githubIssues.githubUpdatedAt), desc(githubIssues.githubId))
-            .limit(pageSize)
-            .offset((current - 1) * pageSize);
-  return { connection, records, page: current, totalPages, totalCount, pageSize };
+  const records = await db
+    .select({
+      githubId: table.githubId,
+      title: table.title,
+      url: table.url,
+      updatedAt: table.githubUpdatedAt,
+      number,
+      status: recordStatus,
+      labels: kind === "run" ? sql<never[]>`'[]'::jsonb` : labels,
+      author:
+        kind === "run"
+          ? sql<null>`null`
+          : kind === "pull"
+            ? githubPulls.author
+            : githubIssues.author,
+      branch:
+        kind === "run"
+          ? githubRuns.branch
+          : kind === "pull"
+            ? githubPulls.headBranch
+            : sql<null>`null`,
+      baseBranch: kind === "pull" ? githubPulls.baseBranch : sql<null>`null`,
+      workflow: kind === "run" ? githubRuns.workflow : sql<null>`null`,
+      event: kind === "run" ? githubRuns.event : sql<null>`null`,
+      attempt: kind === "run" ? githubRuns.runAttempt : sql<null>`null`,
+    })
+    .from(table)
+    .where(where)
+    .orderBy(desc(table.githubUpdatedAt), desc(table.githubId))
+    .limit(pageSize)
+    .offset((current - 1) * pageSize);
+  return { connection, records, page: current, totalPages, totalCount, pageSize, query };
 }
 
 export async function getRecordDetails(kind: RecordKind, githubId: number) {

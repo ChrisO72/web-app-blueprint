@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { summarizeRenderMetrics, type RenderMetrics } from "../render";
 
 const now = "2026-11-18T12:00:00Z";
 const sample = "2026-11-18T11:59:00Z";
@@ -117,13 +118,19 @@ describe("Render metrics", () => {
       .filter((url) => url.pathname.includes("/metrics/"));
     expect(urls.every((url) => url.searchParams.get("resource") === id)).toBe(true);
     if (node !== "storage") expect(urls.some((url) => url.pathname.includes("http-"))).toBe(false);
+    if (disk) {
+      expect(summarizeRenderMetrics(result)).toMatchObject({
+        health: "healthy",
+        metric: { label: "Disk", value: "2 / 10 GiB" },
+      });
+    }
   });
 
   it("shares concurrent reads and the one-minute cache, and invalidates it on credential changes", async () => {
     const { readRenderMetrics } = await import("../render.server");
     const first = readRenderMetrics("redis");
-    expect(readRenderMetrics("redis")).toBe(first);
-    await first;
+    await Promise.all([first, readRenderMetrics("redis")]);
+    expect(fetchMock).toHaveBeenCalledTimes(6);
     const count = fetchMock.mock.calls.length;
     await readRenderMetrics("redis");
     expect(fetchMock).toHaveBeenCalledTimes(count);
@@ -133,6 +140,37 @@ describe("Render metrics", () => {
     vi.stubEnv("RENDER_API_KEY", "replacement-key");
     await readRenderMetrics("redis");
     expect(fetchMock).toHaveBeenCalledTimes(count * 3);
+  });
+
+  it("shares the Blueprint and card readings with on-demand details", async () => {
+    const { readRenderMetrics } = await import("../render.server");
+    const [db, worker] = await Promise.all([
+      readRenderMetrics("database", "overview"),
+      readRenderMetrics("worker", "overview"),
+    ]);
+    expect(db.metrics.map(({ label }) => label)).toEqual(["Disk", "Connections"]);
+    expect(worker.metrics.map(({ label }) => label)).toEqual(["CPU", "Memory"]);
+    expect(fetchMock).toHaveBeenCalledTimes(8);
+    const detail = await readRenderMetrics("worker");
+    expect(detail.metrics.map(({ label }) => label)).toContain("Outbound");
+    expect(fetchMock).toHaveBeenCalledTimes(10);
+  });
+
+  it("pauses new reads until the Render rate-limit reset", async () => {
+    const { readRenderMetrics } = await import("../render.server");
+    fetchMock.mockImplementationOnce(
+      async () =>
+        new Response(null, {
+          status: 429,
+          headers: { "RateLimit-Reset": String(Date.now() / 1000 + 120) },
+        }),
+    );
+    expect((await readRenderMetrics("worker")).state).toBe("error");
+    vi.advanceTimersByTime(60_001);
+    expect((await readRenderMetrics("database")).state).toBe("error");
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    vi.advanceTimersByTime(60_001);
+    expect((await readRenderMetrics("worker")).state).toBe("ready");
   });
 
   it("returns setup guidance without requests, and skips systems outside Render", async () => {
@@ -173,5 +211,37 @@ describe("Render metrics", () => {
     const { readRenderMetrics } = await import("../render.server");
     expect(await readRenderMetrics("web")).toMatchObject({ state: "error", metrics: [] });
     expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("Site map health", () => {
+  it.each([
+    { used: 79, health: "healthy" },
+    { used: 80, health: "warning" },
+    { used: 95, health: "critical" },
+  ])("labels fresh utilization of $used% as $health", ({ used, health }) => {
+    const result: RenderMetrics = {
+      node: "database",
+      state: "ready",
+      fetchedAt: now,
+      metrics: [
+        {
+          label: "Disk",
+          value: `${used} GiB`,
+          detail: "",
+          sampledAt: sample,
+          utilizationPercent: used,
+        },
+      ],
+    };
+    expect(summarizeRenderMetrics(result).health).toBe(health);
+    result.metrics[0].sampledAt = old;
+    expect(summarizeRenderMetrics(result)).toEqual({ health: "warning" });
+  });
+
+  it("keeps unconfigured resources neutral", () => {
+    expect(summarizeRenderMetrics({ node: "web", state: "unconfigured", metrics: [] })).toEqual({
+      health: "unknown",
+    });
   });
 });

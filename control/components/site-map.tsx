@@ -7,6 +7,8 @@ import {
   ServerIcon,
 } from "@heroicons/react/24/outline";
 import type { SiteConfig, SystemId } from "~/system.config";
+import { renderResourceName, summarizeRenderMetrics, type RenderMetrics } from "../render";
+import { systemKinds } from "./system-kind";
 
 const icons = {
   process: ServerIcon,
@@ -14,6 +16,34 @@ const icons = {
   adapter: CubeIcon,
   store: CircleStackIcon,
   service: CloudIcon,
+};
+
+const healthTags = {
+  healthy: {
+    label: "Healthy",
+    color: "text-emerald-700 dark:text-emerald-400",
+    background: "fill-emerald-50 dark:fill-emerald-500/15",
+  },
+  warning: {
+    label: "Warning",
+    color: "text-orange-700 dark:text-orange-400",
+    background: "fill-orange-50 dark:fill-orange-500/15",
+  },
+  critical: {
+    label: "Critical",
+    color: "text-red-700 dark:text-red-400",
+    background: "fill-red-50 dark:fill-red-500/15",
+  },
+  unknown: {
+    label: "No data",
+    color: "text-zinc-600 dark:text-zinc-400",
+    background: "fill-zinc-100 dark:fill-white/10",
+  },
+  loading: {
+    label: "Loading",
+    color: "text-zinc-600 dark:text-zinc-400",
+    background: "fill-zinc-100 dark:fill-white/10",
+  },
 };
 
 const sizes = {
@@ -71,17 +101,19 @@ const paths = {
 
 export function SiteMap({
   site,
+  metrics,
   onSelect,
 }: {
   site: SiteConfig;
+  metrics?: RenderMetrics[];
   onSelect: (node: SystemId) => void;
 }) {
   const id = useId();
   return (
-    <div className="overflow-x-auto rounded-2xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-950">
+    <div className="overflow-x-auto rounded-2xl border border-zinc-200 bg-zinc-50 dark:border-white/10 dark:bg-zinc-950">
       <svg
-        viewBox="0 0 1200 670"
-        className="mx-auto block h-auto w-full max-w-[1200px] min-w-[960px]"
+        viewBox="120 12 1028 642"
+        className="block h-auto w-full min-w-[824px]"
         role="group"
         aria-labelledby={`${id}-title ${id}-description`}
       >
@@ -104,60 +136,109 @@ export function SiteMap({
             <rect x="1" y="1" width="4" height="4" fill="context-stroke" />
           </marker>
         </defs>
-        {Object.entries(site.systems).map(([key, system]) => {
-          const [x, y] = positions[key as SystemId];
+        {(Object.keys(site.systems) as SystemId[]).map((node) => {
+          const system = site.systems[node];
+          const [x, y] = positions[node];
           const size = sizes[system.kind];
           const Icon = icons[system.kind];
           const compact = system.kind === "module" || system.kind === "adapter";
           const store = system.kind === "store";
           const process = system.kind === "process";
+          const external = system.kind === "service";
+          const kind = systemKinds[system.kind];
+          const monitored = Boolean(renderResourceName(node));
+          const result = metrics?.find((entry) => entry.node === node);
+          const summary = result && summarizeRenderMetrics(result);
+          const badge = healthTags[summary?.health ?? (monitored ? "loading" : "unknown")];
+          const metric = summary?.metric;
+          const tagX = size.width - 77;
           return (
             <g
-              key={key}
+              key={node}
               transform={`translate(${x} ${y})`}
               role="button"
               tabIndex={0}
               aria-label={`View ${system.name} details`}
+              aria-description={[
+                !monitored ? "No Render monitoring" : badge.label,
+                metric && `${metric.label} ${metric.value}`,
+              ]
+                .filter(Boolean)
+                .join(". ")}
               aria-haspopup="dialog"
               onKeyDown={(event) => {
                 if (event.key === "Enter" || event.key === " ") {
                   event.preventDefault();
-                  onSelect(key as SystemId);
+                  onSelect(node);
                 }
               }}
               className="group cursor-pointer focus-visible:outline-2 focus-visible:outline-blue-500"
-              onClick={() => onSelect(key as SystemId)}
+              onClick={() => onSelect(node)}
             >
               <title>{`${system.name}: ${system.description} (${system.source})`}</title>
               <rect
                 {...size}
-                rx="12"
+                rx="14"
                 strokeWidth="1.5"
                 className="fill-white stroke-zinc-200 group-hover:fill-zinc-50 group-hover:stroke-zinc-400 dark:fill-zinc-950 dark:stroke-zinc-700 dark:group-hover:fill-zinc-900 dark:group-hover:stroke-zinc-500"
               />
+              <rect
+                x="11"
+                y="9"
+                width="26"
+                height="26"
+                rx="8"
+                className="fill-zinc-100 dark:fill-white/10"
+              />
               <Icon
                 x="16"
-                y={process ? 24 : 12}
-                width="18"
-                height="18"
+                y="14"
+                width="16"
+                height="16"
                 aria-hidden="true"
-                className="text-zinc-500 dark:text-zinc-400"
+                className={kind.color}
               />
+              <rect x={tagX} y="12" width="66" height="20" rx="10" className={badge.background} />
+              <circle cx={tagX + 10} cy="22" r="3" className={`fill-current ${badge.color}`} />
               <text
-                x={compact || store ? 16 : 42}
-                y={compact ? 47 : store ? 73 : process ? 40 : 28}
-                className={`fill-zinc-950 font-semibold dark:fill-zinc-100 ${process ? "text-[21px]" : compact ? "text-[14px]" : "text-[16px]"}`}
+                x={tagX + 17}
+                y="26"
+                className={`fill-current text-[10px] font-medium ${badge.color}`}
+              >
+                {badge.label}
+              </text>
+              <text
+                x={external ? 44 : 12}
+                y={compact ? 49 : external ? 26 : 61}
+                className={`fill-zinc-950 font-semibold dark:fill-zinc-100 ${process ? "text-[21px]" : compact || store ? "text-[14px]" : "text-[16px]"}`}
               >
                 {system.name}
               </text>
-              {!compact && (
-                <text
-                  x={system.kind === "service" ? 42 : 16}
-                  y={store ? 98 : process ? 85 : 48}
-                  className="fill-zinc-500 text-[11px] dark:fill-zinc-400"
-                >
-                  {system.source}
-                </text>
+              {metric ? (
+                <>
+                  <text x="12" y="86" className="fill-zinc-500 text-[10px] dark:fill-zinc-400">
+                    {metric.label}
+                  </text>
+                  <text
+                    x="12"
+                    y="106"
+                    className="fill-zinc-950 text-[13px] font-semibold tabular-nums dark:fill-zinc-100"
+                    textLength={store && metric.value.length > 15 ? 101 : undefined}
+                    lengthAdjust="spacingAndGlyphs"
+                  >
+                    {metric.value}
+                  </text>
+                </>
+              ) : (
+                !compact && (
+                  <text
+                    x={external ? 44 : 12}
+                    y={external ? 46 : 89}
+                    className="fill-zinc-500 text-[11px] dark:fill-zinc-400"
+                  >
+                    {system.source}
+                  </text>
+                )
               )}
             </g>
           );
@@ -170,7 +251,7 @@ export function SiteMap({
                 d={d}
                 fill="none"
                 strokeWidth="5"
-                className="stroke-white dark:stroke-zinc-950"
+                className="stroke-zinc-50 dark:stroke-zinc-950"
               />
               <path
                 d={d}

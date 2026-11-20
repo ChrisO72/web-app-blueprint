@@ -59,6 +59,24 @@ describe("Control metrics resource", () => {
     },
   );
 
+  it("loads only mapped Render services for the overview", async () => {
+    await expect(loader(args("user", "scope=overview"))).rejects.toMatchObject({ status: 302 });
+    expect(readRenderMetrics).not.toHaveBeenCalled();
+    const result = await loader(args("admin", "scope=overview"));
+    expect(vi.mocked(readRenderMetrics).mock.calls).toEqual([
+      ["web", "overview"],
+      ["worker", "overview"],
+      ["database", "overview"],
+      ["redis", "overview"],
+      ["storage", "overview"],
+      ["controlDatabase", "overview"],
+    ]);
+    expect(result.data).toMatchObject({
+      overview: expect.arrayContaining([{ node: "web", state: "ready", metrics: [] }]),
+    });
+    expect(result.init).toMatchObject({ headers: { "Cache-Control": "no-store" } });
+  });
+
   it("uses only the server's resource mapping and prevents browser caching", async () => {
     const result = await loader(
       args("admin", "node=web&resource=srv-other&host=https://other.example&token=other"),

@@ -1,5 +1,7 @@
-import { useEffect } from "react";
-import { Link, useFetcher } from "react-router";
+import { MagnifyingGlassIcon } from "@heroicons/react/16/solid";
+import { useEffect, type ComponentProps } from "react";
+import { Form, Link, useFetcher } from "react-router";
+import type { RecordKind } from "~/integrations/github/records";
 import { DetailsPanel, DetailsPanelBody, DetailsFields } from "~/web/components/details-panel";
 import { Button } from "~/web/components/ui-kit/button";
 import { Subheading } from "~/web/components/ui-kit/heading";
@@ -10,7 +12,9 @@ import { Heading } from "~/web/components/ui-kit/heading";
 import { Text } from "~/web/components/ui-kit/text";
 import { Badge } from "~/web/components/ui-kit/badge";
 import { Pagination } from "~/web/routes/items/Pagination";
-import { recordPageSizeOptions } from "~/control/pagination";
+import { recordFilterTextLimit, recordPageSizeOptions, recordStatuses } from "~/control/pagination";
+import { Input, InputGroup } from "~/web/components/ui-kit/input";
+import { Select } from "~/web/components/ui-kit/select";
 import {
   Table,
   TableBody,
@@ -20,10 +24,116 @@ import {
   TableRow,
 } from "~/web/components/ui-kit/table";
 
-type Props = Awaited<ReturnType<typeof listRecords>> & { title: string; base: string };
+type Props = Awaited<ReturnType<typeof listRecords>> & {
+  title: string;
+  base: string;
+  kind: RecordKind;
+};
+
+type GitHubRecord = Props["records"][number];
+
+const statusColors: Record<string, ComponentProps<typeof Badge>["color"]> = {
+  open: "green",
+  merged: "purple",
+  success: "green",
+  failure: "red",
+  timed_out: "red",
+  startup_failure: "red",
+  in_progress: "blue",
+  action_required: "amber",
+  waiting: "amber",
+};
+
+const updatedDate = new Intl.DateTimeFormat("en", { dateStyle: "medium", timeZone: "UTC" });
+
+function readableValue(value: string) {
+  return value.replaceAll("_", " ").replace(/^./, (letter) => letter.toUpperCase());
+}
+
+function RecordFilters({ base, kind, query }: Pick<Props, "base" | "kind" | "query">) {
+  const { q, status, scope, pageSize } = query;
+  const scopeLabel = kind === "run" ? "Branch" : kind === "pull" ? "Label or branch" : "Label";
+  const resetUrl = `${base}?pageSize=${pageSize}`;
+  return (
+    <Form method="get" action={base} className="mt-5 flex shrink-0 flex-wrap items-center gap-2">
+      <input type="hidden" name="pageSize" value={pageSize} />
+      <div className="min-w-48 flex-1">
+        <InputGroup>
+          <MagnifyingGlassIcon data-slot="icon" aria-hidden="true" />
+          <Input
+            key={q}
+            type="search"
+            name="q"
+            defaultValue={q}
+            maxLength={recordFilterTextLimit}
+            aria-label="Search by title or number"
+            placeholder="Search by title or #"
+          />
+        </InputGroup>
+      </div>
+      <Select
+        key={`status:${status}`}
+        className="w-auto!"
+        name="status"
+        defaultValue={status}
+        aria-label="Status"
+      >
+        <option value="">All statuses</option>
+        {Object.entries(recordStatuses[kind]).map(([value, label]) => (
+          <option key={value} value={value}>
+            {label}
+          </option>
+        ))}
+      </Select>
+      <Input
+        key={`scope:${scope}`}
+        className="w-auto! min-w-0"
+        type="search"
+        name="scope"
+        defaultValue={scope}
+        maxLength={recordFilterTextLimit}
+        aria-label={scopeLabel}
+        placeholder={scopeLabel}
+      />
+      <Button type="submit" outline>
+        Apply
+      </Button>
+      {(q || status || scope) && (
+        <Button href={resetUrl} plain>
+          Clear filters
+        </Button>
+      )}
+    </Form>
+  );
+}
+
+function RecordLabels({ labels }: { labels: GitHubRecord["labels"] }) {
+  if (!labels.length) return <span className="text-zinc-500 dark:text-zinc-400">—</span>;
+  return (
+    <div className="flex max-w-72 min-w-32 flex-wrap gap-1.5 whitespace-normal">
+      {labels.map((label) => (
+        <Badge key={label.id} className="rounded-full! px-2!">
+          <span
+            aria-hidden="true"
+            className="size-2 shrink-0 rounded-full bg-zinc-400 ring-1 ring-black/10 dark:ring-white/20"
+            style={
+              /^[0-9a-f]{6}$/i.test(label.color)
+                ? { backgroundColor: `#${label.color}` }
+                : undefined
+            }
+          />
+          <span className="wrap-anywhere">{label.name}</span>
+        </Badge>
+      ))}
+    </div>
+  );
+}
+
 export function GitHubRecords({
   title,
   base,
+  kind,
+  query,
   connection,
   records,
   page,
@@ -31,11 +141,14 @@ export function GitHubRecords({
   totalCount,
   pageSize,
 }: Props) {
-  const { selected, open, select, close } = useDetailsSelection<Props["records"][number]>(
+  const { selected, open, select, close } = useDetailsSelection<GitHubRecord>(
     records,
     (record) => record.githubId,
   );
-  const kind = base.endsWith("actions") ? "run" : base.endsWith("prs") ? "pull" : "issue";
+  const hasFilters = Boolean(query.q || query.status || query.scope);
+  const statuses: Record<string, string> = recordStatuses[kind];
+  const statusLabel = (status: string) =>
+    Object.hasOwn(statuses, status) ? statuses[status] : readableValue(status);
   const fetcher = useFetcher<typeof recordLoader>();
   const { load } = fetcher;
   const githubId = selected?.githubId;
@@ -52,7 +165,7 @@ export function GitHubRecords({
         {title}
         {totalCount > 0 && (
           <span className="ml-2 font-normal text-zinc-500 dark:text-zinc-400">
-            ({totalCount} total)
+            ({totalCount} {hasFilters ? "matching" : "total"})
           </span>
         )}
       </Heading>
@@ -77,59 +190,81 @@ export function GitHubRecords({
               </Link>
             </Text>
           )}
+          <RecordFilters base={base} kind={kind} query={query} />
           {records.length ? (
-            <div className="mt-6 min-h-0 min-w-0 flex-1 overflow-auto">
-              <Table>
+            <div className="mt-4 min-h-0 min-w-0 overflow-auto rounded-xl border border-zinc-200 bg-white dark:border-white/10 dark:bg-white/2.5">
+              <Table bleed dense className="mx-0! [--gutter:--spacing(4)]">
                 <TableHead>
                   <TableRow>
-                    <TableHeader>Title</TableHeader>
-                    <TableHeader>Status</TableHeader>
-                    <TableHeader>{base.endsWith("actions") ? "Branch" : "Labels"}</TableHeader>
-                    <TableHeader>Updated</TableHeader>
+                    <TableHeader scope="col">{kind === "run" ? "Run" : "Title"}</TableHeader>
+                    <TableHeader scope="col">Status</TableHeader>
+                    <TableHeader scope="col">{kind === "run" ? "Branch" : "Labels"}</TableHeader>
+                    <TableHeader scope="col">Updated</TableHeader>
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {records.map((record) => (
-                    <TableRow
-                      key={record.githubId}
-                      onOpen={() => select(record)}
-                      title={`View #${record.number} ${record.title}`}
-                    >
-                      <TableCell className="min-w-64 whitespace-normal">
-                        <span className="font-medium">
-                          #{record.number} {record.title}
-                        </span>
-                      </TableCell>
-                      <TableCell>
-                        <Badge color="zinc">
-                          {record.mergedAt
-                            ? "merged"
-                            : record.draft && record.state === "open"
-                              ? "draft"
-                              : (record.conclusion ?? record.state)}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        {base.endsWith("actions") ? (
-                          (record.branch ?? "—")
-                        ) : (
-                          <div className="flex flex-wrap gap-1">
-                            {record.labels.map((label) => (
-                              <Badge key={label.id} color="zinc">
-                                {label.name}
-                              </Badge>
-                            ))}
+                  {records.map((record) => {
+                    const metadata = [
+                      `#${record.number}`,
+                      record.author && `@${record.author.login}`,
+                      record.workflow,
+                      record.event && readableValue(record.event),
+                      record.attempt && record.attempt > 1 && `Attempt ${record.attempt}`,
+                    ].filter(Boolean);
+                    const updatedAt = new Date(record.updatedAt);
+                    return (
+                      <TableRow
+                        key={record.githubId}
+                        onOpen={() => select(record)}
+                        title={`View #${record.number} ${record.title}`}
+                      >
+                        <TableCell className="w-full min-w-64 whitespace-normal">
+                          <div className="font-medium wrap-anywhere">{record.title}</div>
+                          <div className="text-xs/5 wrap-anywhere text-zinc-500 dark:text-zinc-400">
+                            {metadata.join(" · ")}
                           </div>
-                        )}
-                      </TableCell>
-                      <TableCell>{new Date(record.updatedAt).toLocaleString()}</TableCell>
-                    </TableRow>
-                  ))}
+                          {record.branch && record.baseBranch && (
+                            <div className="text-xs/5 wrap-anywhere text-zinc-500 dark:text-zinc-400">
+                              {record.branch} → {record.baseBranch}
+                            </div>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          <Badge
+                            color={
+                              Object.hasOwn(statusColors, record.status)
+                                ? statusColors[record.status]
+                                : "zinc"
+                            }
+                            className="rounded-full! px-2!"
+                          >
+                            {statusLabel(record.status)}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          {kind === "run" ? (
+                            <span className="block max-w-48 min-w-24 text-sm wrap-anywhere whitespace-normal text-zinc-600 dark:text-zinc-300">
+                              {record.branch ?? "—"}
+                            </span>
+                          ) : (
+                            <RecordLabels labels={record.labels} />
+                          )}
+                        </TableCell>
+                        <TableCell className="text-zinc-500 tabular-nums dark:text-zinc-400">
+                          <time dateTime={updatedAt.toISOString()} title={updatedAt.toUTCString()}>
+                            {updatedDate.format(updatedAt)}
+                          </time>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
                 </TableBody>
               </Table>
             </div>
           ) : (
-            <Text className="mt-6">No records yet.</Text>
+            <Text className="mt-6" role="status">
+              {hasFilters ? "No records match these filters." : "No records yet."}
+            </Text>
           )}
           {totalCount > 0 && (
             <div className="shrink-0 overflow-x-auto">
@@ -163,11 +298,7 @@ export function GitHubRecords({
               fields={[
                 {
                   label: "Status",
-                  value: selected.mergedAt
-                    ? "merged"
-                    : selected.draft && selected.state === "open"
-                      ? "draft"
-                      : (selected.conclusion ?? selected.state),
+                  value: statusLabel(selected.status),
                 },
                 { label: "Updated", value: new Date(selected.updatedAt).toLocaleString() },
                 { label: "Branch", value: selected.branch },

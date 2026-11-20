@@ -1,12 +1,12 @@
-import { useEffect, useState } from "react";
+import clsx from "clsx";
+import { useEffect, useState, type ComponentProps, type ReactNode } from "react";
 import { useFetcher } from "react-router";
-import { ArrowPathIcon, MagnifyingGlassIcon } from "@heroicons/react/16/solid";
+import { ArrowPathIcon, ChevronDownIcon, MagnifyingGlassIcon } from "@heroicons/react/16/solid";
 import { site, type SystemId } from "~/system.config";
 import { DetailsPanel, DetailsFields } from "~/web/components/details-panel";
 import { Button } from "~/web/components/ui-kit/button";
-import { Navbar, NavbarItem, NavbarSection } from "~/web/components/ui-kit/navbar";
 import { Field, Label } from "~/web/components/ui-kit/fieldset";
-import { Input } from "~/web/components/ui-kit/input";
+import { Input, InputGroup } from "~/web/components/ui-kit/input";
 import { Select } from "~/web/components/ui-kit/select";
 import { Badge } from "~/web/components/ui-kit/badge";
 import { Text, TextLink } from "~/web/components/ui-kit/text";
@@ -22,71 +22,125 @@ import {
 
 import { renderResourceName } from "../render";
 import { ServiceMetrics } from "./service-metrics";
+import { systemKinds } from "./system-kind";
 
 const date = (value: string) => new Date(value).toLocaleString();
 
-function LogRow({ log }: { log: TelemetryLog }) {
+const severityColors: Record<string, ComponentProps<typeof Badge>["color"]> = {
+  info: "blue",
+  warn: "amber",
+  warning: "amber",
+  error: "red",
+  fatal: "red",
+};
+
+function TelemetryRow({
+  title,
+  metadata,
+  children,
+}: {
+  title: string;
+  metadata: ReactNode;
+  children?: ReactNode;
+}) {
   return (
-    <details className="group border-b border-zinc-950/5 py-4 dark:border-white/5">
-      <summary className="cursor-pointer list-none rounded-lg text-sm">
-        <div className="mb-2 flex flex-wrap items-center gap-2 text-xs text-zinc-500 dark:text-zinc-400">
-          <time dateTime={log.timestamp}>{date(log.timestamp)}</time>
-          <Badge color={log.severity === "error" || log.severity === "fatal" ? "red" : "zinc"}>
+    <details className="group border-b border-zinc-950/5 last:border-0 dark:border-white/5">
+      <summary className="flex cursor-pointer list-none items-start gap-3 rounded-lg px-3 py-2.5 text-sm outline-offset-[-2px] hover:bg-zinc-50 focus-visible:outline-2 focus-visible:outline-blue-500 dark:hover:bg-white/5 [&::-webkit-details-marker]:hidden">
+        <span className="min-w-0 flex-1">
+          <span className="block truncate font-medium text-zinc-950 group-open:wrap-anywhere group-open:whitespace-pre-wrap dark:text-white">
+            {title}
+          </span>
+          <span className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-zinc-600 dark:text-zinc-400">
+            {metadata}
+          </span>
+        </span>
+        <ChevronDownIcon
+          aria-hidden="true"
+          className="mt-0.5 size-4 shrink-0 text-zinc-500 group-open:rotate-180"
+        />
+      </summary>
+      {children && <div className="px-3 pt-1 pb-3">{children}</div>}
+    </details>
+  );
+}
+
+function LogRow({ log }: { log: TelemetryLog }) {
+  const color = Object.hasOwn(severityColors, log.severity) ? severityColors[log.severity] : "zinc";
+  return (
+    <TelemetryRow
+      title={log.message || "(No message)"}
+      metadata={
+        <>
+          <Badge color={color} className="rounded-full! px-2! capitalize">
             {log.severity}
           </Badge>
           <span>
             {log.service === "web" ? "Server" : log.service === "browser" ? "Browser" : "Worker"}
           </span>
-        </div>
-        <p className="truncate text-zinc-950 group-open:hidden dark:text-white">
-          {log.message || "(No message)"}
-        </p>
-        <p className="hidden text-zinc-500 group-open:block dark:text-zinc-400">Hide details</p>
-      </summary>
-      <div className="mt-3 space-y-3">
-        <p className="text-sm wrap-anywhere whitespace-pre-wrap text-zinc-950 dark:text-white">
-          {log.message || "(No message)"}
-        </p>
-        <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 text-xs">
+          <time dateTime={log.timestamp}>{date(log.timestamp)}</time>
+        </>
+      }
+    >
+      {log.context.length > 0 && (
+        <dl className="grid grid-cols-[minmax(0,auto)_minmax(0,1fr)] gap-x-4 gap-y-1.5 rounded-lg bg-zinc-50 p-3 text-xs dark:bg-white/5">
           {log.context.map(({ label, value }) => (
             <div key={label} className="contents">
-              <dt className="text-zinc-500 dark:text-zinc-400">{label}</dt>
+              <dt className="wrap-anywhere text-zinc-500 dark:text-zinc-400">{label}</dt>
               <dd className="wrap-anywhere text-zinc-700 dark:text-zinc-300">{value}</dd>
             </div>
           ))}
         </dl>
-      </div>
-    </details>
+      )}
+    </TelemetryRow>
   );
 }
 
 function IssueRow({ issue }: { issue: TelemetryIssue }) {
+  const color =
+    issue.status === "resolved" ? "green" : issue.status === "unresolved" ? "amber" : "zinc";
   return (
-    <details className="group border-b border-zinc-950/5 py-4 dark:border-white/5">
-      <summary className="cursor-pointer list-none rounded-lg text-sm">
-        <div className="mb-2 flex flex-wrap items-center gap-2 text-xs text-zinc-500 dark:text-zinc-400">
-          <Badge color={issue.status === "resolved" ? "green" : "zinc"}>{issue.status}</Badge>
-          {issue.count !== undefined && <span>{issue.count} occurrences</span>}
+    <TelemetryRow
+      title={issue.title}
+      metadata={
+        <>
+          <Badge color={color} className="rounded-full! px-2! capitalize">
+            {issue.status}
+          </Badge>
+          {issue.count !== undefined && (
+            <span>
+              {issue.count} {issue.count === "1" ? "occurrence" : "occurrences"}
+            </span>
+          )}
           {issue.lastSeen && (
             <time dateTime={issue.lastSeen}>Last seen {date(issue.lastSeen)}</time>
           )}
+        </>
+      }
+    >
+      {(issue.culprit || issue.firstSeen || issue.url) && (
+        <div className="space-y-1.5 rounded-lg bg-zinc-50 p-3 text-sm dark:bg-white/5">
+          {issue.culprit && <Text className="wrap-anywhere">{issue.culprit}</Text>}
+          {issue.firstSeen && (
+            <Text>
+              First seen <time dateTime={issue.firstSeen}>{date(issue.firstSeen)}</time>
+            </Text>
+          )}
+          {issue.url && (
+            <TextLink href={issue.url} target="_blank" rel="noreferrer">
+              Open in Sentry ↗
+            </TextLink>
+          )}
         </div>
-        <p className="truncate text-zinc-950 group-open:wrap-anywhere group-open:whitespace-normal dark:text-white">
-          {issue.title}
-        </p>
-      </summary>
-      <div className="mt-3 space-y-3 text-sm">
-        {issue.culprit && <Text className="wrap-anywhere">{issue.culprit}</Text>}
-        {issue.firstSeen && <Text>First seen {date(issue.firstSeen)}</Text>}
-        {issue.url && (
-          <TextLink href={issue.url} target="_blank" rel="noreferrer">
-            Open in Sentry ↗
-          </TextLink>
-        )}
-      </div>
-    </details>
+      )}
+    </TelemetryRow>
   );
 }
+
+const telemetryTabs = [
+  { id: "logs", label: "Logs" },
+  { id: "errors", label: "Errors" },
+  { id: "details", label: "Details" },
+] as const;
 
 export function ServicePanel({
   node,
@@ -99,9 +153,11 @@ export function ServicePanel({
   onClose: () => void;
   defaultEnvironment: string;
 }) {
-  const metricsAvailable = Boolean(renderResourceName(node));
-  const [tab, setTab] = useState<"details" | "metrics" | "logs" | "errors">(
-    metricsAvailable ? "metrics" : "details",
+  const system = site.systems[node];
+  const kind = systemKinds[system.kind];
+  const supported = hasTelemetry(node);
+  const [tab, setTab] = useState<(typeof telemetryTabs)[number]["id"]>(
+    supported ? "logs" : "details",
   );
   const [filters, setFilters] = useState(() =>
     telemetryQuerySchema.parse({ node, environment: defaultEnvironment }),
@@ -109,7 +165,6 @@ export function ServicePanel({
   const [search, setSearch] = useState("");
   const fetcher = useFetcher<TelemetryResponse>();
   const { load } = fetcher;
-  const supported = hasTelemetry(node);
   const telemetryActive = tab === "logs" || tab === "errors";
   const key = telemetryQueryKey(filters);
   const url = `/control/telemetry?${key}`;
@@ -129,215 +184,240 @@ export function ServicePanel({
     <DetailsPanel
       open={open}
       onClose={onClose}
-      title={site.systems[node].name}
-      description={site.systems[node].description}
-      header={
-        <Navbar className="mt-3" aria-label="Service details">
-          <NavbarSection>
-            {metricsAvailable && (
-              <NavbarItem current={tab === "metrics"} onClick={() => setTab("metrics")}>
-                Metrics
-              </NavbarItem>
-            )}
-            <NavbarItem current={tab === "details"} onClick={() => setTab("details")}>
-              Details
-            </NavbarItem>
-            {(["logs", "errors"] as const).map((telemetryTab) => (
-              <NavbarItem
-                key={telemetryTab}
-                current={tab === telemetryTab}
+      title={system.name}
+      description={system.description}
+    >
+      <div className="min-h-0 flex-1 overflow-y-auto px-4 sm:px-6">
+        {renderResourceName(node) && <ServiceMetrics node={node} open={open} />}
+        {supported && (
+          <div
+            role="group"
+            aria-label="Service views"
+            className="mt-3 inline-flex rounded-xl bg-zinc-100 p-1 dark:bg-white/5"
+          >
+            {telemetryTabs.map(({ id, label }) => (
+              <button
+                key={id}
+                type="button"
+                aria-pressed={tab === id}
+                className={clsx(
+                  "rounded-lg px-3 py-1.5 text-sm font-medium focus-visible:outline-2 focus-visible:outline-blue-500",
+                  tab === id
+                    ? "bg-white text-zinc-950 shadow-xs dark:bg-white/10 dark:text-white"
+                    : "cursor-pointer text-zinc-600 hover:text-zinc-950 dark:text-zinc-400 dark:hover:text-white",
+                )}
                 onClick={() => {
-                  setTab(telemetryTab);
-                  update({ tab: telemetryTab });
+                  if (tab === id) return;
+                  setTab(id);
+                  if (id !== "details" && filters.tab !== id) update({ tab: id });
                 }}
               >
-                {telemetryTab === "logs" ? "Logs" : "Errors"}
-              </NavbarItem>
+                {label}
+              </button>
             ))}
-          </NavbarSection>
-        </Navbar>
-      }
-    >
-      {supported && telemetryActive && (
-        <div className="shrink-0 space-y-4 border-b border-zinc-950/10 p-6 dark:border-white/10">
-          <form
-            className="flex gap-2"
-            onSubmit={(event) => {
-              event.preventDefault();
-              const q = search.trim();
-              if (q === filters.q) void load(url);
-              else update({ q });
-            }}
-          >
-            <Input
-              aria-label={filters.tab === "logs" ? "Search log messages" : "Search errors"}
-              placeholder={filters.tab === "logs" ? "Search log messages…" : "Search errors…"}
-              value={search}
-              maxLength={200}
-              onChange={(event) => setSearch(event.target.value)}
-            />
-            <Button type="submit" outline aria-label="Search">
-              <MagnifyingGlassIcon />
-            </Button>
-            <Button
-              type="button"
-              outline
-              aria-label="Refresh"
-              disabled={loading}
-              onClick={() => {
-                void load(url);
+          </div>
+        )}
+        {supported && telemetryActive && (
+          <div className="space-y-3 border-b border-zinc-950/10 py-3 dark:border-white/10">
+            <form
+              className="flex items-center gap-2"
+              onSubmit={(event) => {
+                event.preventDefault();
+                const q = search.trim();
+                if (q === filters.q) void load(url);
+                else update({ q });
               }}
             >
-              <ArrowPathIcon />
-            </Button>
-          </form>
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-            <Field>
-              <Label>Time range</Label>
-              <Select
-                value={filters.period}
-                onChange={(event) =>
-                  update({ period: event.target.value as TelemetryQuery["period"] })
-                }
+              <div className="min-w-0 flex-1">
+                <InputGroup>
+                  <MagnifyingGlassIcon data-slot="icon" aria-hidden="true" />
+                  <Input
+                    type="search"
+                    aria-label={filters.tab === "logs" ? "Search log messages" : "Search errors"}
+                    placeholder={filters.tab === "logs" ? "Search log messages…" : "Search errors…"}
+                    value={search}
+                    maxLength={200}
+                    onChange={(event) => setSearch(event.target.value)}
+                  />
+                </InputGroup>
+              </div>
+              <Button type="submit" outline>
+                Search
+              </Button>
+              <Button
+                type="button"
+                outline
+                aria-label="Refresh"
+                disabled={loading}
+                onClick={() => {
+                  void load(url);
+                }}
               >
-                <option value="1h">Last hour</option>
-                <option value="24h">Last 24 hours</option>
-                <option value="7d">Last 7 days</option>
-              </Select>
-            </Field>
-            <Field>
-              <Label>Environment</Label>
-              <Select
-                value={filters.environment}
-                onChange={(event) => update({ environment: event.target.value })}
-              >
-                <option value="">All</option>
-                {environments.map((name) => (
-                  <option key={name} value={name}>
-                    {name}
-                  </option>
-                ))}
-              </Select>
-            </Field>
-            {node === "web" && (
+                <ArrowPathIcon data-slot="icon" />
+              </Button>
+            </form>
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
               <Field>
-                <Label>Source</Label>
+                <Label>Time range</Label>
                 <Select
-                  value={filters.source}
+                  value={filters.period}
                   onChange={(event) =>
-                    update({ source: event.target.value as TelemetryQuery["source"] })
+                    update({ period: event.target.value as TelemetryQuery["period"] })
                   }
                 >
-                  <option value="all">All</option>
-                  <option value="web">Server</option>
-                  <option value="browser">Browser</option>
+                  <option value="1h">Last hour</option>
+                  <option value="24h">Last 24 hours</option>
+                  <option value="7d">Last 7 days</option>
                 </Select>
               </Field>
-            )}
-            {filters.tab === "logs" ? (
               <Field>
-                <Label>Severity</Label>
+                <Label>Environment</Label>
                 <Select
-                  value={filters.severity}
-                  onChange={(event) =>
-                    update({ severity: event.target.value as TelemetryQuery["severity"] })
-                  }
+                  value={filters.environment}
+                  onChange={(event) => update({ environment: event.target.value })}
                 >
-                  {(["all", "debug", "info", "warning", "error", "fatal"] as const).map((level) => (
-                    <option key={level} value={level}>
-                      {level[0].toUpperCase() + level.slice(1)}
+                  <option value="">All</option>
+                  {environments.map((name) => (
+                    <option key={name} value={name}>
+                      {name}
                     </option>
                   ))}
                 </Select>
               </Field>
-            ) : (
-              <Field>
-                <Label>Status</Label>
-                <Select
-                  value={filters.status}
-                  onChange={(event) =>
-                    update({ status: event.target.value as TelemetryQuery["status"] })
-                  }
-                >
-                  {(["all", "unresolved", "resolved", "archived"] as const).map((status) => (
-                    <option key={status} value={status}>
-                      {status[0].toUpperCase() + status.slice(1)}
-                    </option>
-                  ))}
-                </Select>
-              </Field>
-            )}
+              {node === "web" && (
+                <Field>
+                  <Label>Source</Label>
+                  <Select
+                    value={filters.source}
+                    onChange={(event) =>
+                      update({ source: event.target.value as TelemetryQuery["source"] })
+                    }
+                  >
+                    <option value="all">All</option>
+                    <option value="web">Server</option>
+                    <option value="browser">Browser</option>
+                  </Select>
+                </Field>
+              )}
+              {filters.tab === "logs" ? (
+                <Field>
+                  <Label>Severity</Label>
+                  <Select
+                    value={filters.severity}
+                    onChange={(event) =>
+                      update({ severity: event.target.value as TelemetryQuery["severity"] })
+                    }
+                  >
+                    {(["all", "debug", "info", "warning", "error", "fatal"] as const).map(
+                      (level) => (
+                        <option key={level} value={level}>
+                          {level[0].toUpperCase() + level.slice(1)}
+                        </option>
+                      ),
+                    )}
+                  </Select>
+                </Field>
+              ) : (
+                <Field>
+                  <Label>Status</Label>
+                  <Select
+                    value={filters.status}
+                    onChange={(event) =>
+                      update({ status: event.target.value as TelemetryQuery["status"] })
+                    }
+                  >
+                    {(["all", "unresolved", "resolved", "archived"] as const).map((status) => (
+                      <option key={status} value={status}>
+                        {status[0].toUpperCase() + status.slice(1)}
+                      </option>
+                    ))}
+                  </Select>
+                </Field>
+              )}
+            </div>
           </div>
-        </div>
-      )}
-      <div className="min-h-0 flex-1 overflow-y-auto px-6" aria-busy={telemetryActive && loading}>
-        {tab === "details" ? (
-          <div className="py-6">
-            <DetailsFields
-              fields={[
-                { label: "Type", value: site.systems[node].kind },
-                { label: "Source", value: site.systems[node].source },
-                {
-                  label: "Connects to",
-                  value:
-                    site.connections
-                      .filter(([from]) => from === node)
-                      .map(([, to]) => site.systems[to].name)
-                      .join(", ") || "None",
-                },
-                {
-                  label: "Connected from",
-                  value:
-                    site.connections
-                      .filter(([, to]) => to === node)
-                      .map(([from]) => site.systems[from].name)
-                      .join(", ") || "None",
-                },
-              ]}
-            />
-          </div>
-        ) : tab === "metrics" ? (
-          <ServiceMetrics node={node} active={open} />
-        ) : !supported ? (
-          <Text className="py-8">No {filters.tab} available.</Text>
-        ) : loading ? (
-          <Text className="py-8" role="status">
-            Loading {filters.tab}…
-          </Text>
-        ) : result?.state === "unconfigured" || result?.state === "error" ? (
-          <Text className="py-8" role="status">
-            {result.message}
-          </Text>
-        ) : filters.tab === "logs" ? (
-          result?.logs.length ? (
-            result.logs.map((log) => <LogRow key={log.id} log={log} />)
-          ) : (
-            <Text className="py-8">No logs found for these filters.</Text>
-          )
-        ) : result?.issues.length ? (
-          result.issues.map((issue) => <IssueRow key={issue.id} issue={issue} />)
-        ) : (
-          <Text className="py-8">No errors found for these filters.</Text>
         )}
-      </div>
-      {telemetryActive && supported && result?.state === "ready" && (
-        <div className="flex shrink-0 items-center justify-between border-t border-zinc-950/10 p-6 dark:border-white/10">
-          <Button
-            outline
-            disabled={loading || !result.previous}
-            onClick={() => setFilters((current) => ({ ...current, cursor: result.previous ?? "" }))}
-          >
-            Previous
-          </Button>
-          <Button
-            outline
-            disabled={loading || !result.next}
-            onClick={() => setFilters((current) => ({ ...current, cursor: result.next ?? "" }))}
-          >
-            Next
-          </Button>
+        <div className="py-2" aria-busy={telemetryActive && loading}>
+          {tab === "details" ? (
+            <div className="py-6">
+              <DetailsFields
+                fields={[
+                  {
+                    label: "Type",
+                    value: (
+                      <Badge className="rounded-full! px-2!">
+                        <span
+                          aria-hidden="true"
+                          className={`size-1.5 rounded-full bg-current ${kind.color}`}
+                        />
+                        {kind.label}
+                      </Badge>
+                    ),
+                  },
+                  { label: "Source", value: <code>{system.source}</code> },
+                  {
+                    label: "Connects to",
+                    value:
+                      site.connections
+                        .filter(([from]) => from === node)
+                        .map(([, to]) => site.systems[to].name)
+                        .join(", ") || "None",
+                  },
+                  {
+                    label: "Connected from",
+                    value:
+                      site.connections
+                        .filter(([, to]) => to === node)
+                        .map(([from]) => site.systems[from].name)
+                        .join(", ") || "None",
+                  },
+                ]}
+              />
+            </div>
+          ) : !result ? (
+            <Text className="py-8" role="status">
+              Loading {filters.tab}…
+            </Text>
+          ) : result.state === "unconfigured" || result.state === "error" ? (
+            <Text className="py-8" role="status">
+              {result.message}
+            </Text>
+          ) : filters.tab === "logs" ? (
+            result.logs.length ? (
+              result.logs.map((log) => <LogRow key={log.id} log={log} />)
+            ) : (
+              <Text className="py-8">No logs found for these filters.</Text>
+            )
+          ) : result.issues.length ? (
+            result.issues.map((issue) => <IssueRow key={issue.id} issue={issue} />)
+          ) : (
+            <Text className="py-8">No errors found for these filters.</Text>
+          )}
         </div>
-      )}
+      </div>
+      {telemetryActive &&
+        supported &&
+        result?.state === "ready" &&
+        (result.previous || result.next) && (
+          <div className="flex shrink-0 items-center justify-between border-t border-zinc-950/10 px-4 py-3 sm:px-6 dark:border-white/10">
+            <Button
+              outline
+              disabled={loading || !result.previous}
+              onClick={() =>
+                setFilters((current) => ({ ...current, cursor: result.previous ?? "" }))
+              }
+            >
+              Previous
+            </Button>
+            <Button
+              outline
+              disabled={loading || !result.next}
+              onClick={() => setFilters((current) => ({ ...current, cursor: result.next ?? "" }))}
+            >
+              Next
+            </Button>
+          </div>
+        )}
     </DetailsPanel>
   );
 }

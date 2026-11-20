@@ -48,6 +48,7 @@ vi.mock("~/control/db/repositories/github.server", () => ({
     totalPages: 0,
     totalCount: 0,
     pageSize: 10,
+    query: { page: 1, pageSize: 10, q: "", status: "", scope: "" },
   })),
 }));
 
@@ -105,10 +106,10 @@ describe.each([
 });
 
 describe.each([
-  { path: "/control/issues", loader: issuesLoader, kind: "issue" },
-  { path: "/control/prs", loader: prsLoader, kind: "pull" },
-  { path: "/control/actions", loader: actionsLoader, kind: "run" },
-])("Control pagination ($path)", ({ path, loader, kind }) => {
+  { path: "/control/issues", loader: issuesLoader, kind: "issue", status: "open" },
+  { path: "/control/prs", loader: prsLoader, kind: "pull", status: "merged" },
+  { path: "/control/actions", loader: actionsLoader, kind: "run", status: "failure" },
+])("Control records ($path)", ({ path, loader, kind, status }) => {
   it.each([
     { query: "", page: 1, pageSize: 10 },
     { query: "?page=3&pageSize=5", page: 3, pageSize: 5 },
@@ -118,10 +119,31 @@ describe.each([
     { query: "?page=1.5&pageSize=12", page: 1, pageSize: 10 },
     { query: "?page=1000001&pageSize=1000000", page: 1, pageSize: 10 },
     { query: "?page=invalid&pageSize=invalid", page: 1, pageSize: 10 },
+    { query: "?q=%00&scope=%20&status=invalid", page: 1, pageSize: 10 },
   ])("validates $query before querying records", async ({ query, page, pageSize }) => {
     vi.mocked(listRecords).mockClear();
     await loader(args("admin", `${path}${query}`));
-    expect(listRecords).toHaveBeenCalledExactlyOnceWith(kind, page, pageSize);
+    expect(listRecords).toHaveBeenCalledExactlyOnceWith(kind, {
+      page,
+      pageSize,
+      q: "",
+      status: "",
+      scope: "",
+    });
+  });
+
+  it("passes trimmed filters and pagination to the repository", async () => {
+    vi.mocked(listRecords).mockClear();
+    await loader(
+      args("admin", `${path}?page=2&pageSize=5&q=+%2342+&scope=+release+&status=${status}`),
+    );
+    expect(listRecords).toHaveBeenCalledExactlyOnceWith(kind, {
+      page: 2,
+      pageSize: 5,
+      q: "#42",
+      status,
+      scope: "release",
+    });
   });
 });
 

@@ -1,6 +1,12 @@
 import { z } from "zod";
 import type { SystemId } from "~/system.config";
-import { renderResourceName, type RenderMetric, type RenderMetrics } from "./render";
+import {
+  primaryLabels,
+  renderRefreshInterval,
+  renderResourceName,
+  type RenderMetric,
+  type RenderMetrics,
+} from "./render";
 
 const settingsSchema = z.object({
   RENDER_API_KEY: z.string().trim().min(1),
@@ -22,8 +28,6 @@ const seriesSchema = z.array(
 type Series = z.infer<typeof seriesSchema>;
 type Reading = { value: number; unit: string; timestamp: string };
 type Settings = z.infer<typeof settingsSchema>;
-type CacheEntry = Settings & { expiresAt: number; result: Promise<RenderMetrics> };
-const cache = new Map<SystemId, CacheEntry>();
 const hour = 60 * 60 * 1000;
 const number = (value: number) =>
   new Intl.NumberFormat("en", { maximumFractionDigits: 1 }).format(value);
@@ -103,6 +107,8 @@ function usage(label: string, values: Series, limits: Series): RenderMetric {
       ? `${label === "CPU" ? "Of allocated CPU" : `of ${format(limit.value, limit.unit)}`}${label !== "CPU" && percentage !== undefined ? ` · ${number(percentage)}%` : ""}`
       : "Capacity unavailable",
     sampledAt: used?.timestamp,
+    capacity: comparable ? format(limit.value, limit.unit) : undefined,
+    utilizationPercent: percentage,
   };
 }
 
@@ -124,23 +130,59 @@ function errorMessage(error: unknown) {
   return "Render metrics could not be loaded. Try refreshing in a minute.";
 }
 
-async function read(node: SystemId, name: string, settings: Settings): Promise<RenderMetrics> {
-  const signal = AbortSignal.timeout(10_000);
-  async function get(path: string, params = new URLSearchParams()) {
-    const url = new URL(path, "https://api.render.com/v1/");
-    url.search = params.toString();
+function createClient(settings: Settings) {
+  const cache = new Map<string, { expiresAt: number; result: Promise<unknown> }>();
+  let retryAt = 0;
+
+  async function request(url: URL) {
+    if (Date.now() < retryAt) throw new RenderReadError(429);
     const response = await fetch(url, {
       headers: { Authorization: `Bearer ${settings.RENDER_API_KEY}`, Accept: "application/json" },
-      signal,
+      signal: AbortSignal.timeout(10_000),
       redirect: "error",
     });
+    if (response.status === 429) {
+      const reset = Number(response.headers.get("RateLimit-Reset")) * 1000;
+      retryAt = Math.max(retryAt, reset > Date.now() ? reset : Date.now() + renderRefreshInterval);
+    }
     if (!response.ok) throw new RenderReadError(response.status);
     return response.json() as Promise<unknown>;
   }
+
+  function get(path: string, params?: URLSearchParams) {
+    const url = new URL(path, "https://api.render.com/v1/");
+    if (params) url.search = params.toString();
+    // The resource and aggregation identify the series across viewers and refreshes.
+    const key = url.href;
+    const now = Date.now();
+    const cached = cache.get(key);
+    if (cached && cached.expiresAt > now) return cached.result;
+    if (params) {
+      const bandwidth = path === "metrics/bandwidth";
+      url.searchParams.set("startTime", new Date(now - (bandwidth ? 24 : 1) * hour).toISOString());
+      url.searchParams.set("endTime", new Date(now).toISOString());
+      if (!bandwidth) url.searchParams.set("resolutionSeconds", "60");
+    }
+    // A Blueprint can replace a resource ID. Discard expired keys as new reads arrive.
+    for (const [entryKey, entry] of cache) if (entry.expiresAt <= now) cache.delete(entryKey);
+    const result = request(url);
+    cache.set(key, { expiresAt: now + renderRefreshInterval, result });
+    return result;
+  }
+
+  return { ...settings, get };
+}
+
+let client: ReturnType<typeof createClient> | undefined;
+
+async function read(
+  node: SystemId,
+  name: string,
+  { get, RENDER_BLUEPRINT_ID }: ReturnType<typeof createClient>,
+  scope: "overview" | "detail",
+): Promise<RenderMetrics> {
   try {
-    const blueprint = blueprintSchema.parse(
-      await get(`blueprints/${settings.RENDER_BLUEPRINT_ID}`),
-    );
+    const blueprint = blueprintSchema.parse(await get(`blueprints/${RENDER_BLUEPRINT_ID}`));
     const matches = blueprint.resources.filter((resource) => resource.name === name);
     if (matches.length !== 1)
       return {
@@ -150,22 +192,9 @@ async function read(node: SystemId, name: string, settings: Settings): Promise<R
         message: `Render resource “${name}” was not uniquely found in this Blueprint. Check system.config.ts.`,
       };
     const resource = matches[0];
-    const now = Date.now();
-    const params = new URLSearchParams({
-      resource: resource.id,
-      startTime: new Date(now - hour).toISOString(),
-      endTime: new Date(now).toISOString(),
-      resolutionSeconds: "60",
-    });
     const failures = new Set<string>();
     async function metric(endpoint: string, extra: Record<string, string> = {}) {
-      const query = new URLSearchParams(params);
-      for (const [key, value] of Object.entries(extra)) query.set(key, value);
-      // Bandwidth has fixed hourly buckets and a reporting delay; use a full day.
-      if (endpoint === "bandwidth") {
-        query.delete("resolutionSeconds");
-        query.set("startTime", new Date(now - 24 * hour).toISOString());
-      }
+      const query = new URLSearchParams({ resource: resource.id, ...extra });
       try {
         return seriesSchema.parse(await get(`metrics/${endpoint}`, query));
       } catch (error) {
@@ -173,21 +202,27 @@ async function read(node: SystemId, name: string, settings: Settings): Promise<R
         return [];
       }
     }
-    const requests: Promise<RenderMetric[]>[] = [
-      Promise.all([metric("cpu"), metric("cpu-limit")]).then(([values, limits]) => [
-        usage("CPU", values, limits),
-      ]),
-      Promise.all([metric("memory"), metric("memory-limit")]).then(([values, limits]) => [
-        usage("Memory", values, limits),
-      ]),
-    ];
-    if (resource.type === "postgres" || node === "storage")
+    const wants = (label: string) => scope === "detail" || primaryLabels[node]?.includes(label);
+    const requests: Promise<RenderMetric[]>[] = [];
+    if (wants("CPU"))
+      requests.push(
+        Promise.all([metric("cpu"), metric("cpu-limit")]).then(([values, limits]) => [
+          usage("CPU", values, limits),
+        ]),
+      );
+    if (wants("Memory"))
+      requests.push(
+        Promise.all([metric("memory"), metric("memory-limit")]).then(([values, limits]) => [
+          usage("Memory", values, limits),
+        ]),
+      );
+    if (wants("Disk") && (resource.type === "postgres" || node === "storage"))
       requests.push(
         Promise.all([metric("disk-usage"), metric("disk-capacity")]).then(([values, limits]) => [
           usage("Disk", values, limits),
         ]),
       );
-    if (["postgres", "redis", "key_value"].includes(resource.type))
+    if (wants("Connections") && ["postgres", "redis", "key_value"].includes(resource.type))
       requests.push(
         metric("active-connections").then((values) => {
           const reading = current(values);
@@ -201,7 +236,10 @@ async function read(node: SystemId, name: string, settings: Settings): Promise<R
           ];
         }),
       );
-    if (["web_service", "private_service", "background_worker"].includes(resource.type))
+    if (
+      scope === "detail" &&
+      ["web_service", "private_service", "background_worker"].includes(resource.type)
+    )
       requests.push(
         metric("instance-count").then((values) => {
           const reading = current(values);
@@ -215,7 +253,7 @@ async function read(node: SystemId, name: string, settings: Settings): Promise<R
           ];
         }),
       );
-    if (resource.type === "web_service") {
+    if (resource.type === "web_service" && wants("Response time")) {
       requests.push(
         metric("http-requests", { aggregateBy: "statusCode" }).then((values) => {
           const count = (entries: Series) =>
@@ -264,7 +302,10 @@ async function read(node: SystemId, name: string, settings: Settings): Promise<R
         }),
       );
     }
-    if (["web_service", "private_service", "background_worker"].includes(resource.type))
+    if (
+      scope === "detail" &&
+      ["web_service", "private_service", "background_worker"].includes(resource.type)
+    )
       requests.push(
         metric("bandwidth").then((values) => {
           const unit = values[0]?.unit;
@@ -302,7 +343,10 @@ async function read(node: SystemId, name: string, settings: Settings): Promise<R
   }
 }
 
-export function readRenderMetrics(node: SystemId): Promise<RenderMetrics> {
+export function readRenderMetrics(
+  node: SystemId,
+  scope: "overview" | "detail" = "detail",
+): Promise<RenderMetrics> {
   const name = renderResourceName(node);
   if (!name) return Promise.resolve({ node, state: "empty", metrics: [] });
   const parsed = settingsSchema.safeParse(process.env);
@@ -315,16 +359,11 @@ export function readRenderMetrics(node: SystemId): Promise<RenderMetrics> {
         "Configure RENDER_API_KEY and RENDER_BLUEPRINT_ID on the web server to view Render metrics.",
     });
   const settings = parsed.data;
-  const cached = cache.get(node);
   if (
-    cached &&
-    cached.expiresAt > Date.now() &&
-    cached.RENDER_API_KEY === settings.RENDER_API_KEY &&
-    cached.RENDER_BLUEPRINT_ID === settings.RENDER_BLUEPRINT_ID
+    !client ||
+    client.RENDER_API_KEY !== settings.RENDER_API_KEY ||
+    client.RENDER_BLUEPRINT_ID !== settings.RENDER_BLUEPRINT_ID
   )
-    return cached.result;
-  // Share in-flight reads across viewers. Client cancellation must not cancel another viewer's read.
-  const result = read(node, name, settings);
-  cache.set(node, { ...settings, expiresAt: Date.now() + 60_000, result });
-  return result;
+    client = createClient(settings);
+  return read(node, name, client, scope);
 }

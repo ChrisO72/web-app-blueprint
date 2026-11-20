@@ -8,11 +8,17 @@ defines the site map. GitHub records live in separate PostgreSQL at `127.0.0.1:5
 
 ## Render metrics
 
-The Web, Worker, storage, Redis, PostgreSQL, and Control DB panels open with a Metrics tab.
-It shows current CPU and memory usage, disk usage and connections where applicable, and
-public HTTP volume, 5xx errors, and p95 latency for web services. Outbound bandwidth covers
-the last 24 hours and arrives in delayed hourly buckets. Other metrics use the last hour;
-old samples and unavailable data are identified explicitly.
+Site-map cards show one current Render reading per monitored system. PostgreSQL, Control DB,
+and storage prioritize disk usage and capacity. Web prioritizes response time, Worker CPU,
+and Redis memory. Card badges summarize observed utilization. Warning starts at 80% and
+Critical at 95%. Partial or stale readings can also show Warning. Systems without recent
+capacity readings show No data when there is no warning.
+
+The overview fetches the card readings and their fallbacks. Opening a system loads its additional
+Render metrics above the logs and errors. The section includes CPU,
+memory, disk, connections, and HTTP metrics where available. Outbound bandwidth covers the
+last 24 hours and arrives in delayed hourly buckets. Other metrics use the last hour. The
+panel identifies old samples and unavailable data.
 
 Set `RENDER_API_KEY` and `RENDER_BLUEPRINT_ID` on the web server or in root `.env`.
 Find the Blueprint ID (`exs-…`) in its Render Dashboard URL. With scoped API keys, grant
@@ -23,14 +29,15 @@ Compose passes these settings only to Web.
 Resource names in [../system.config.ts](../system.config.ts) match [../render.yaml](../render.yaml).
 Update `renderResource` if your deployed resources have different names. The selected Blueprint
 identifies the deployment; Sentry environment filters do not change these metrics. Reads are
-cached on the server for one minute and refresh every minute while the Metrics tab is open.
+cached on the server for one minute and refresh every minute while the Overview is visible.
 This view requires no metrics database or OpenTelemetry collector. HTTP latency requires a
 Pro workspace or higher. See [Render metrics](https://render.com/docs/service-metrics).
 
 ## Logs and errors
 
-Click any system in the overview to open its panel. Web includes server and browser telemetry;
-Worker includes worker telemetry. Other systems currently show empty Logs and Errors tabs.
+Click any system in the overview to open its panel. Web and Worker open on Logs, with Errors
+and Details tabs alongside. Web includes both server and browser telemetry. Other system panels
+show their source and connections.
 Search and filter recorded logs or grouped errors, expand rows for context, and open issues in Sentry.
 
 Set `SENTRY_ORG`, `SENTRY_PROJECT`, and `SENTRY_READ_TOKEN` in root `.env` or on the web server.
@@ -51,7 +58,17 @@ Set these in root `.env` before connecting:
 - `CONTROL_ENCRYPTION_KEY`: a stable base64-encoded 32-byte key. Generate it with
   `node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"`.
 - `APP_URL`: the public HTTPS address of the app. The webhook uses `/webhooks/github` on
-  this address. Local development requires HTTPS forwarding to the web service.
+  this address by default.
+
+For local development, keep `APP_URL=http://localhost:5173`. With `cloudflared` installed,
+run `make github-tunnel` in a separate terminal and leave it running. Set
+`GITHUB_WEBHOOK_ORIGIN` in root `.env` to the HTTPS origin it prints. Start the app with
+`make dev`, or run `make reload` if it is already running. Open
+[Control Settings](http://localhost:5173/control/settings) locally. The tunnel forwards only
+`/webhooks/github`, and Control registers the full delivery URL when you connect.
+Each new Quick Tunnel gets a different hostname. For an existing connection, update the origin
+in both `.env` and the GitHub webhook's Payload URL, preserving its path and query string.
+Use a named Cloudflare Tunnel for a stable hostname.
 
 In Settings, validate a fine-grained token, select a repository, and connect. The token needs
 Metadata, Issues, Pull requests, and Actions read permissions, plus Webhooks write. Its owner

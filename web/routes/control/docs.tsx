@@ -216,7 +216,14 @@ function Reader({ data, file }: ReaderProps) {
   }, []);
   return (
     <>
-      <header className="mb-4 flex flex-wrap items-center justify-between gap-3 border-b border-zinc-500/20 pb-3">
+      <Link
+        className="mb-4 inline-flex shrink-0 items-center gap-1 self-start text-sm md:hidden"
+        to={docsUrl(file.path) + "&view=files"}
+      >
+        <ArrowLeftIcon className="size-4" />
+        Back to files
+      </Link>
+      <header className="mb-4 flex shrink-0 flex-wrap items-center justify-between gap-3 border-b border-zinc-500/20 pb-3">
         <div className="min-w-0">
           <p className="mb-1 text-xs text-zinc-500">{data.branch}</p>
           <h2 className="font-mono text-sm font-medium break-all">{file.path}</h2>
@@ -234,19 +241,21 @@ function Reader({ data, file }: ReaderProps) {
           </Button>
         )}
       </header>
-      {pullUrl && (
-        <p role="status" className="mb-4 text-sm">
-          Changes proposed.{" "}
-          <a className="underline" href={pullUrl} target="_blank" rel="noreferrer">
-            View pull request
-          </a>
-        </p>
-      )}
-      {editing ? (
-        <Editor data={data} file={file} onClose={() => setEditing(false)} onSuccess={onSuccess} />
-      ) : (
-        <DocumentMarkdown {...data} path={file.path} source={file.source} />
-      )}
+      <div key={editing ? "editor" : "document"} className="min-h-0 flex-1 overflow-auto">
+        {pullUrl && (
+          <p role="status" className="mb-4 text-sm">
+            Changes proposed.{" "}
+            <a className="underline" href={pullUrl} target="_blank" rel="noreferrer">
+              View pull request
+            </a>
+          </p>
+        )}
+        {editing ? (
+          <Editor data={data} file={file} onClose={() => setEditing(false)} onSuccess={onSuccess} />
+        ) : (
+          <DocumentMarkdown {...data} path={file.path} source={file.source} />
+        )}
+      </div>
     </>
   );
 }
@@ -255,10 +264,10 @@ export default function Docs({ loaderData: { data, error, filesOpen } }: Route.C
   const file = data?.document;
   const showFiles = filesOpen || !file;
   return (
-    <div className="text-zinc-950 dark:text-white">
-      <Heading>Docs</Heading>
+    <div className="flex min-h-0 min-w-0 flex-1 flex-col text-zinc-950 dark:text-white">
+      <Heading className="shrink-0">Docs</Heading>
       {error && (
-        <div className="mt-4 space-y-2">
+        <div className="mt-4 min-h-0 space-y-2 overflow-y-auto">
           <FormError actionData={{ formError: error }} />
           <Link className="text-sm underline" to="/control/settings">
             Control Settings
@@ -266,31 +275,24 @@ export default function Docs({ loaderData: { data, error, filesOpen } }: Route.C
         </div>
       )}
       {data && (
-        <div className="mt-5 grid min-w-0 gap-6 border-t border-zinc-500/20 pt-4 md:grid-cols-[minmax(12rem,16rem)_minmax(0,1fr)]">
+        <div className="mt-5 grid min-h-0 min-w-0 flex-1 grid-rows-[minmax(0,1fr)] gap-6 border-t border-zinc-500/20 pt-4 md:grid-cols-[minmax(12rem,16rem)_minmax(0,1fr)]">
           <aside
             className={clsx(
               !showFiles && "hidden",
-              "md:sticky md:top-4 md:block md:max-h-[calc(100dvh-4rem)] md:self-start md:overflow-y-auto md:border-r md:border-zinc-500/20 md:pr-4",
+              "min-h-0 overflow-y-auto md:block md:border-r md:border-zinc-500/20 md:pr-4",
             )}
           >
             <DocsNavigator paths={data.paths} selected={file?.path} />
           </aside>
-          <section className={clsx(file && showFiles && "hidden", "min-w-0 md:block")}>
+          <section
+            key={file && [data.connectionId, data.branch, file.path, filesOpen].join(":")}
+            className={clsx(
+              file && showFiles ? "hidden md:flex" : "flex",
+              "min-h-0 min-w-0 flex-col",
+            )}
+          >
             {file ? (
-              <>
-                <Link
-                  className="mb-4 inline-flex items-center gap-1 text-sm md:hidden"
-                  to={docsUrl(file.path) + "&view=files"}
-                >
-                  <ArrowLeftIcon className="size-4" />
-                  Back to files
-                </Link>
-                <Reader
-                  key={[data.connectionId, data.branch, file.path, filesOpen].join(":")}
-                  data={data}
-                  file={file}
-                />
-              </>
+              <Reader data={data} file={file} />
             ) : (
               <p className="text-sm text-zinc-500">{data.message}</p>
             )}

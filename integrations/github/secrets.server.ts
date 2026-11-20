@@ -19,12 +19,13 @@ function encryptionKey() {
 }
 
 export function webhookUrl() {
-  const { APP_URL } = readEnvironment(githubEnvSchema);
+  const { GITHUB_WEBHOOK_ORIGIN, APP_URL } = readEnvironment(githubEnvSchema);
+  const setting = GITHUB_WEBHOOK_ORIGIN ? "GITHUB_WEBHOOK_ORIGIN" : "APP_URL";
   let url: URL;
   try {
-    url = new URL("/webhooks/github", APP_URL);
+    url = new URL("/webhooks/github", GITHUB_WEBHOOK_ORIGIN ?? APP_URL);
   } catch {
-    throw new GitHubSetupError("Set APP_URL to a public HTTPS URL before connecting GitHub.");
+    throw new GitHubSetupError(`Set ${setting} to a public HTTPS URL before connecting GitHub.`);
   }
   if (
     url.protocol !== "https:" ||
@@ -33,7 +34,7 @@ export function webhookUrl() {
     /^(localhost|127\.|\[?::1\]?$)/i.test(url.hostname) ||
     url.hostname.endsWith(".local")
   )
-    throw new GitHubSetupError("APP_URL must be a public HTTPS URL to receive GitHub webhooks.");
+    throw new GitHubSetupError(`${setting} must be a public HTTPS URL to receive GitHub webhooks.`);
   return url.toString();
 }
 
