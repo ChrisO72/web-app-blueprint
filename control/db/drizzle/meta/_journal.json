@@ -8,6 +8,13 @@
       "when": 1794948648679,
       "tag": "0000_github_connection",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1795205902404,
+      "tag": "0001_control_tasks",
+      "breakpoints": true
     }
   ]
 }

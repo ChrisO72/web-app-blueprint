@@ -4,10 +4,14 @@ import type { User } from "~/db/repositories/users";
 import { env } from "~/web/env.server";
 import { authenticatedUserContext } from "~/web/lib/session.server";
 import { loader as overviewLoader } from "~/web/routes/control/index";
-import { loader as activityLoader } from "~/web/routes/control/activity";
+import {
+  action as createTaskAction,
+  loader as activityLoader,
+} from "~/web/routes/control/activity";
+import { loader as activityOptionsLoader } from "~/web/routes/control/activity-options";
 import { action as settingsAction, loader as settingsLoader } from "~/web/routes/control/settings";
 import { action as docsAction, loader as docsLoader } from "~/web/routes/control/docs";
-import { loadDocuments, proposeDocument } from "~/control/docs.server";
+import { loadDocuments, loadRepositorySkills, proposeDocument } from "~/control/docs.server";
 import { loader as issuesLoader } from "~/web/routes/control/issues";
 import { loader as prsLoader } from "~/web/routes/control/prs";
 import { loader as recordLoader } from "~/web/routes/control/record";
@@ -21,10 +25,33 @@ import {
   publicError,
 } from "~/control/github.server";
 import { getRecordDetails, listRecords } from "~/control/db/repositories/github.server";
+import {
+  createTask,
+  findTaskSubmission,
+  listTasks,
+  listTaskTargets,
+} from "~/control/db/repositories/tasks.server";
 import { CONNECTION_ID, TOKEN } from "~/integrations/github/test/fixtures";
 import type { Route } from "../routes/control/+types/index";
 
-vi.mock("~/control/docs.server", () => ({ loadDocuments: vi.fn(), proposeDocument: vi.fn() }));
+vi.mock("~/control/docs.server", () => ({
+  loadDocuments: vi.fn(),
+  loadRepositorySkills: vi.fn(),
+  proposeDocument: vi.fn(),
+}));
+vi.mock("~/control/db/repositories/tasks.server", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("~/control/db/repositories/tasks.server")>()),
+  listTasks: vi.fn(async () => ({
+    tasks: [],
+    page: 1,
+    pageSize: 10,
+    totalPages: 0,
+    totalCount: 0,
+  })),
+  listTaskTargets: vi.fn(async () => null),
+  findTaskSubmission: vi.fn(async () => null),
+  createTask: vi.fn(async () => ({ outcome: "created" as const })),
+}));
 vi.mock("~/control/github.server", () => ({
   settingsData: vi.fn(async () => ({
     setup: { ready: false, error: null },
@@ -80,6 +107,7 @@ function args(role: User["role"], path: string) {
 describe.each([
   { path: "/control", loader: overviewLoader },
   { path: "/control/activity", loader: activityLoader },
+  { path: "/control/activity/options", loader: activityOptionsLoader },
   { path: "/control/settings", loader: settingsLoader },
   { path: "/control/docs", loader: docsLoader },
   { path: "/control/issues", loader: issuesLoader },
@@ -124,6 +152,114 @@ it("provides schema-derived entity fields in the Control overview", () => {
   expect(pullFields.find(({ name }) => name === "headBranch")).toMatchObject({
     sqlType: "text",
     nullable: false,
+  });
+});
+
+describe("Control activity", () => {
+  const selection = {
+    id: "7e0547a5-3f88-41c0-ae4e-b6f70efca686",
+    connectionId: CONNECTION_ID,
+    targetKind: "issue",
+    targetId: "42",
+    skillPath: ".agents/skills/blueprint-build/SKILL.md",
+  };
+  const skillSha = "a".repeat(40);
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.mocked(loadRepositorySkills).mockResolvedValue({
+      connectionId: CONNECTION_ID,
+      repositoryId: 123,
+      skills: [{ name: "blueprint-build", path: selection.skillPath, sha: skillSha }],
+    });
+  });
+
+  function submission(role: User["role"], origin = env.APP_URL) {
+    const base = args(role, "/control/activity");
+    return {
+      ...base,
+      request: new Request(base.url, {
+        method: "POST",
+        headers: { origin },
+        body: new URLSearchParams({ ...selection, organizationId: "9", skillSha: "untrusted" }),
+      }),
+    };
+  }
+
+  it("scopes history to the authenticated organization and uses Control pagination", async () => {
+    await activityLoader(args("admin", "/control/activity?page=3&pageSize=25&organizationId=9"));
+    expect(listTasks).toHaveBeenCalledExactlyOnceWith(1, 3, 25);
+  });
+
+  it("searches synced targets by the trimmed query", async () => {
+    await activityOptionsLoader(args("admin", "/control/activity/options?q=+%2342+"));
+    expect(listTaskTargets).toHaveBeenCalledExactlyOnceWith("#42");
+  });
+
+  it("blocks non-admins from loading skills or creating tasks", async () => {
+    await expect(
+      activityOptionsLoader(args("viewer", "/control/activity/options?kind=skills")),
+    ).rejects.toMatchObject({ status: 302 });
+    await expect(createTaskAction(submission("user"))).rejects.toMatchObject({ status: 302 });
+    expect(loadRepositorySkills).not.toHaveBeenCalled();
+    expect(findTaskSubmission).not.toHaveBeenCalled();
+    expect(createTask).not.toHaveBeenCalled();
+  });
+
+  it("guards task creation by method and origin", async () => {
+    await expect(createTaskAction(args("admin", "/control/activity"))).rejects.toMatchObject({
+      status: 405,
+    });
+    await expect(
+      createTaskAction(submission("admin", "https://other.example")),
+    ).rejects.toMatchObject({ status: 403 });
+    expect(findTaskSubmission).not.toHaveBeenCalled();
+  });
+
+  it("uses the authenticated owner and the server-resolved skill when creating a task", async () => {
+    expect(await createTaskAction(submission("admin"))).toEqual({ success: true });
+    expect(loadRepositorySkills).toHaveBeenCalledExactlyOnceWith(CONNECTION_ID);
+    expect(createTask).toHaveBeenCalledExactlyOnceWith({
+      ...selection,
+      targetId: 42,
+      organizationId: 1,
+      createdByUserId: 1,
+      repositoryId: 123,
+      skillSha,
+    });
+  });
+
+  it("rejects a skill that disappeared after the picker loaded", async () => {
+    vi.mocked(loadRepositorySkills).mockResolvedValueOnce({
+      connectionId: CONNECTION_ID,
+      repositoryId: 123,
+      skills: [],
+    });
+    expect(await createTaskAction(submission("admin"))).toMatchObject({
+      fieldErrors: { skillPath: expect.any(Array) },
+    });
+    expect(createTask).not.toHaveBeenCalled();
+  });
+
+  it("returns success for a saved submission even after the repository disconnects", async () => {
+    vi.mocked(findTaskSubmission).mockResolvedValueOnce({
+      ...selection,
+      targetKind: "issue",
+      targetId: 42,
+      organizationId: 1,
+      createdByUserId: 1,
+      createdAt: new Date(),
+      status: "created",
+      repositoryId: 123,
+      repositoryName: "owner/repo",
+      targetNumber: 15,
+      targetTitle: "Example",
+      targetUrl: "https://github.com/owner/repo/issues/15",
+      skillSha,
+    });
+    expect(await createTaskAction(submission("admin"))).toEqual({ success: true });
+    expect(loadRepositorySkills).not.toHaveBeenCalled();
+    expect(createTask).not.toHaveBeenCalled();
   });
 });
 

@@ -91,6 +91,11 @@ source of truth; `raw` stores the latest record JSON. Comments, reviews, jobs, l
 files are not imported. Webhooks update the mirror; use Sync now after downtime. Disconnect
 removes Control's webhook and clears its cached records. Replace token renews access.
 
+In **Activity**, select **Run task** to pair a synced issue or pull request with an agent
+skill from the connected repository's default branch. **Create task** saves it to the
+organization's history with a **Created** status. Task history remains available after
+disconnecting GitHub. Execution will be added separately.
+
 [Render](../render.yaml) provisions a separate Control database and generates one encryption
 key shared by Web and Worker. Both services apply Control migrations before starting.
 

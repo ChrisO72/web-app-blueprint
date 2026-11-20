@@ -9,6 +9,7 @@ export default function ControlLayout() {
     "/control/issues",
     "/control/actions",
     "/control/docs",
+    "/control/activity",
   ].includes(pathname.replace(/\/$/, ""));
 
   return (

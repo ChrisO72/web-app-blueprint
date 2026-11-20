@@ -3,9 +3,13 @@ import { getConnection } from "./db/repositories/github.server";
 import { GitHubClient } from "~/integrations/github/client.server";
 import { GitHubDocsClient } from "~/integrations/github/docs.server";
 import { decryptSecret, GitHubSetupError } from "~/integrations/github/secrets.server";
+import { documentLabel } from "./docs";
+import { repositorySkillPath, type TaskSkill } from "./tasks";
 
-async function connectedDocs() {
+async function connectedDocs(expectedConnectionId?: string) {
   const connection = await getConnection();
+  if (expectedConnectionId && connection?.id !== expectedConnectionId)
+    throw new GitHubSetupError("The repository connection changed. Reopen the task dialog.");
   if (
     !connection?.webhookId ||
     !connection.owner ||
@@ -47,6 +51,16 @@ export async function loadDocuments(requested: string | null) {
         ? "This file is no longer on the default branch."
         : "This repository has no Markdown files.",
   };
+}
+
+export async function loadRepositorySkills(expectedConnectionId?: string) {
+  const { client, snapshot, connectionId } = await connectedDocs(expectedConnectionId);
+  const entries = await client.documents(snapshot.tree);
+  const skills: TaskSkill[] = entries
+    .filter(({ path }) => repositorySkillPath.test(path))
+    .map(({ path, sha }) => ({ path, sha, name: documentLabel(path) ?? path }))
+    .sort((a, b) => a.name.localeCompare(b.name));
+  return { connectionId, repositoryId: snapshot.id, skills };
 }
 
 export type Proposal = {
