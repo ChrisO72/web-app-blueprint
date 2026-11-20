@@ -3,7 +3,6 @@ import {
   CircleStackIcon,
   CloudIcon,
   CodeBracketSquareIcon,
-  CubeIcon,
   ServerIcon,
 } from "@heroicons/react/24/outline";
 import type { SiteConfig, SystemId } from "~/system.config";
@@ -13,7 +12,6 @@ import { systemKinds } from "./system-kind";
 const icons = {
   process: ServerIcon,
   module: CodeBracketSquareIcon,
-  adapter: CubeIcon,
   store: CircleStackIcon,
   service: CloudIcon,
 };
@@ -49,7 +47,6 @@ const healthTags = {
 const sizes = {
   process: { width: 250, height: 125 },
   module: { width: 125, height: 62.5 },
-  adapter: { width: 125, height: 62.5 },
   store: { width: 125, height: 125 },
   service: { width: 250, height: 62.5 },
 };
@@ -61,15 +58,15 @@ const positions = {
   database: [140, 32],
   redis: [345, 32],
   queue: [345, 177],
-  storageAdapter: [550, 177],
+  storageModule: [550, 177],
   storage: [550, 32],
-  mailAdapter: [202.5, 477],
+  mailModule: [202.5, 477],
   mail: [140, 571.5],
   control: [940, 177],
   controlDatabase: [940, 32],
-  sentryAdapter: [612.5, 477],
+  sentryModule: [612.5, 477],
   sentry: [550, 571.5],
-  githubAdapter: [940, 477],
+  githubModule: [940, 477],
   github: [877.5, 571.5],
 } satisfies Record<SystemId, [number, number]>;
 
@@ -80,20 +77,20 @@ const paths = {
   "web-queue": "M407.5 239.5 V272 H768 V320",
   "queue-redis": "M407.5 177 V157",
   "queue-worker": "M407.5 239.5 V272 H172 V320",
-  "web-storageAdapter": "M612.5 239.5 V288 H752 V320",
-  "worker-storageAdapter": "M612.5 239.5 V288 H188 V320",
-  "storageAdapter-storage": "M612.5 177 V157",
-  "worker-mailAdapter": "M265 445 V477",
-  "mailAdapter-mail": "M265 539.5 V571.5",
+  "web-storageModule": "M612.5 239.5 V288 H752 V320",
+  "worker-storageModule": "M612.5 239.5 V288 H188 V320",
+  "storageModule-storage": "M612.5 177 V157",
+  "worker-mailModule": "M265 445 V477",
+  "mailModule-mail": "M265 539.5 V571.5",
   "web-control": "M784 320 V304 H1002.5 V239.5",
   "control-controlDatabase": "M1002.5 177 V157",
   "worker-control": "M374 445 V460 H850 V208.25 H940",
-  "web-sentryAdapter": "M675 445 V477",
-  "worker-sentryAdapter": "M330 445 V468 H651 V477",
-  "control-sentryAdapter": "M940 192 H866 V508.25 H737.5",
-  "sentryAdapter-sentry": "M675 539.5 V571.5",
-  "control-githubAdapter": "M1002.5 239.5 V477",
-  "githubAdapter-github": "M1002.5 539.5 V571.5",
+  "web-sentryModule": "M675 445 V477",
+  "worker-sentryModule": "M330 445 V468 H651 V477",
+  "control-sentryModule": "M940 192 H866 V508.25 H737.5",
+  "sentryModule-sentry": "M675 539.5 V571.5",
+  "control-githubModule": "M1002.5 239.5 V477",
+  "githubModule-github": "M1002.5 539.5 V571.5",
   "github-web": "M877.5 602.75 H830 V390 H800",
 } satisfies {
   [Connection in SiteConfig["connections"][number] as `${Connection[0]}-${Connection[1]}`]: string;
@@ -141,7 +138,7 @@ export function SiteMap({
           const [x, y] = positions[node];
           const size = sizes[system.kind];
           const Icon = icons[system.kind];
-          const compact = system.kind === "module" || system.kind === "adapter";
+          const compact = system.kind === "module";
           const store = system.kind === "store";
           const process = system.kind === "process";
           const external = system.kind === "service";

@@ -37,7 +37,10 @@ Pro workspace or higher. See [Render metrics](https://render.com/docs/service-me
 
 Click any system in the overview to open its panel. Web and Worker open on Logs, with Errors
 and Details tabs alongside. Web includes both server and browser telemetry. Other system panels
-show their source and connections.
+show their source and connections. Module panels also list data types. Expand a type to see its
+source and fields. Repositories and Control show PostgreSQL field types from their Drizzle
+schemas. Integration modules show the request, response, and payload shapes used by the app.
+
 Search and filter recorded logs or grouped errors, expand rows for context, and open issues in Sentry.
 
 Set `SENTRY_ORG`, `SENTRY_PROJECT`, and `SENTRY_READ_TOKEN` in root `.env` or on the web server.

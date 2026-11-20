@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useFetcher } from "react-router";
+import { moduleTypes } from "~/control/module-types.server";
 import { renderRefreshInterval } from "~/control/render";
 import type { loader as metricsLoader } from "~/web/routes/control/metrics";
 import { ServicePanel } from "~/control/components/service-panel";
@@ -14,7 +15,7 @@ const overviewMetricsUrl = "/control/metrics?scope=overview";
 
 export function loader({ context }: Route.LoaderArgs) {
   requireAdmin(context);
-  return { sentryEnvironment: environment };
+  return { sentryEnvironment: environment, moduleTypes };
 }
 
 export function meta() {
@@ -48,6 +49,7 @@ export default function Control({ loaderData }: Route.ComponentProps) {
         <ServicePanel
           key={selected}
           node={selected}
+          types={loaderData.moduleTypes[selected]}
           open={open}
           onClose={() => setOpen(false)}
           defaultEnvironment={loaderData.sentryEnvironment}

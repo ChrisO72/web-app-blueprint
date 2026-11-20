@@ -105,6 +105,16 @@ describe.each([
   );
 });
 
+it("provides schema-derived entity fields in the Control overview", () => {
+  const { moduleTypes } = overviewLoader(args("admin", "/control"));
+  const users = moduleTypes.repositories?.find(({ name }) => name === "users");
+  expect(users?.source).toBe("db/schema/auth.ts");
+  expect(users?.definition).toContain('role: "admin" | "user" | "viewer"');
+  expect(users?.definition).toContain("avatarFileId: integer | null");
+  const pulls = moduleTypes.control?.find(({ name }) => name === "github_pulls");
+  expect(pulls?.definition).toContain("headBranch: text");
+});
+
 describe.each([
   { path: "/control/issues", loader: issuesLoader, kind: "issue", status: "open" },
   { path: "/control/prs", loader: prsLoader, kind: "pull", status: "merged" },

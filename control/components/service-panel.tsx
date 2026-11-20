@@ -6,6 +6,7 @@ import { site, type SystemId } from "~/system.config";
 import { DetailsPanel, DetailsFields } from "~/web/components/details-panel";
 import { Button } from "~/web/components/ui-kit/button";
 import { Field, Label } from "~/web/components/ui-kit/fieldset";
+import { Subheading } from "~/web/components/ui-kit/heading";
 import { Input, InputGroup } from "~/web/components/ui-kit/input";
 import { Select } from "~/web/components/ui-kit/select";
 import { Badge } from "~/web/components/ui-kit/badge";
@@ -20,6 +21,7 @@ import {
   type TelemetryIssue,
 } from "../telemetry";
 
+import type { ModuleType } from "../module-types.server";
 import { renderResourceName } from "../render";
 import { ServiceMetrics } from "./service-metrics";
 import { systemKinds } from "./system-kind";
@@ -144,11 +146,13 @@ const telemetryTabs = [
 
 export function ServicePanel({
   node,
+  types,
   open,
   onClose,
   defaultEnvironment,
 }: {
   node: SystemId;
+  types?: readonly ModuleType[];
   open: boolean;
   onClose: () => void;
   defaultEnvironment: string;
@@ -339,7 +343,7 @@ export function ServicePanel({
         )}
         <div className="py-2" aria-busy={telemetryActive && loading}>
           {tab === "details" ? (
-            <div className="py-6">
+            <div className="space-y-6 py-6">
               <DetailsFields
                 fields={[
                   {
@@ -373,6 +377,34 @@ export function ServicePanel({
                   },
                 ]}
               />
+              {types && types.length > 0 && (
+                <section className="space-y-2">
+                  <Subheading>Types</Subheading>
+                  {types.map(({ name, source, definition }, index) => (
+                    <details
+                      key={name}
+                      open={index === 0}
+                      className="group rounded-lg border border-zinc-950/10 dark:border-white/10"
+                    >
+                      <summary className="flex cursor-pointer list-none items-center justify-between gap-2 rounded-lg px-3 py-2 text-sm font-medium text-zinc-950 outline-offset-[-2px] hover:bg-zinc-50 focus-visible:outline-2 focus-visible:outline-blue-500 dark:text-white dark:hover:bg-white/5 [&::-webkit-details-marker]:hidden">
+                        <span className="wrap-anywhere">{name}</span>
+                        <ChevronDownIcon
+                          aria-hidden="true"
+                          className="size-4 shrink-0 text-zinc-500 group-open:rotate-180"
+                        />
+                      </summary>
+                      <div className="space-y-2 px-3 pb-3">
+                        <code className="block text-xs wrap-anywhere text-zinc-600 dark:text-zinc-400">
+                          {source}
+                        </code>
+                        <pre className="rounded-md bg-zinc-50 p-3 text-xs/5 wrap-anywhere whitespace-pre-wrap text-zinc-900 dark:bg-white/5 dark:text-zinc-200">
+                          <code>{definition}</code>
+                        </pre>
+                      </div>
+                    </details>
+                  ))}
+                </section>
+              )}
             </div>
           ) : !result ? (
             <Text className="py-8" role="status">

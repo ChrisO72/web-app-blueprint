@@ -1,6 +1,6 @@
 type System = {
   name: string;
-  kind: "process" | "module" | "adapter" | "store" | "service";
+  kind: "process" | "module" | "store" | "service";
   source: string;
   description: string;
   renderResource?: string;
@@ -43,13 +43,13 @@ const systems = {
   },
   queue: {
     name: "BullMQ",
-    kind: "adapter",
+    kind: "module",
     source: "worker/queues.ts",
     description: "Web enqueues typed jobs for Worker to consume.",
   },
-  storageAdapter: {
-    name: "S3 adapter",
-    kind: "adapter",
+  storageModule: {
+    name: "S3 client",
+    kind: "module",
     source: "integrations/storage/",
     description: "Shared private object operations.",
   },
@@ -60,9 +60,9 @@ const systems = {
     source: "SeaweedFS / S3",
     description: "Private file uploads and account avatars.",
   },
-  mailAdapter: {
-    name: "Mail adapter",
-    kind: "adapter",
+  mailModule: {
+    name: "Mail delivery",
+    kind: "module",
     source: "integrations/mail/",
     description: "Confirmation and password-reset email delivery.",
   },
@@ -85,9 +85,9 @@ const systems = {
     source: "control/db/",
     description: "Separate PostgreSQL for the GitHub connection, issues, PRs, and workflow runs.",
   },
-  sentryAdapter: {
-    name: "Sentry adapter",
-    kind: "adapter",
+  sentryModule: {
+    name: "Telemetry",
+    kind: "module",
     source: "telemetry/ + control/sentry.server.ts",
     description:
       "Browser, Web, and Worker telemetry reporting and read-only logs and errors for Control.",
@@ -98,9 +98,9 @@ const systems = {
     source: "sentry.io",
     description: "Hosted errors, logs, traces, metrics, and browser session replays.",
   },
-  githubAdapter: {
+  githubModule: {
     name: "GitHub API",
-    kind: "adapter",
+    kind: "module",
     source: "integrations/github/",
     description:
       "Repository metadata, webhook registration, and synchronization through the shared worker.",
@@ -125,20 +125,20 @@ export const site = {
     ["web", "queue"],
     ["queue", "redis"],
     ["queue", "worker"],
-    ["web", "storageAdapter"],
-    ["worker", "storageAdapter"],
-    ["storageAdapter", "storage"],
-    ["worker", "mailAdapter"],
-    ["mailAdapter", "mail"],
+    ["web", "storageModule"],
+    ["worker", "storageModule"],
+    ["storageModule", "storage"],
+    ["worker", "mailModule"],
+    ["mailModule", "mail"],
     ["web", "control"],
     ["control", "controlDatabase"],
     ["worker", "control"],
-    ["web", "sentryAdapter"],
-    ["worker", "sentryAdapter"],
-    ["control", "sentryAdapter"],
-    ["sentryAdapter", "sentry"],
-    ["control", "githubAdapter"],
-    ["githubAdapter", "github"],
+    ["web", "sentryModule"],
+    ["worker", "sentryModule"],
+    ["control", "sentryModule"],
+    ["sentryModule", "sentry"],
+    ["control", "githubModule"],
+    ["githubModule", "github"],
     ["github", "web"],
   ],
 } as const satisfies {
