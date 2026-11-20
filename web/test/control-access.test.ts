@@ -109,10 +109,22 @@ it("provides schema-derived entity fields in the Control overview", () => {
   const { moduleTypes } = overviewLoader(args("admin", "/control"));
   const users = moduleTypes.repositories?.find(({ name }) => name === "users");
   expect(users?.source).toBe("db/schema/auth.ts");
-  expect(users?.definition).toContain('role: "admin" | "user" | "viewer"');
-  expect(users?.definition).toContain("avatarFileId: integer | null");
+  const userFields = users && "fields" in users ? users.fields : [];
+  expect(userFields.find(({ name }) => name === "role")).toMatchObject({
+    sqlType: "varchar",
+    nullable: false,
+    enumValues: ["admin", "user", "viewer"],
+  });
+  expect(userFields.find(({ name }) => name === "avatarFileId")).toMatchObject({
+    sqlType: "integer",
+    nullable: true,
+  });
   const pulls = moduleTypes.control?.find(({ name }) => name === "github_pulls");
-  expect(pulls?.definition).toContain("headBranch: text");
+  const pullFields = pulls && "fields" in pulls ? pulls.fields : [];
+  expect(pullFields.find(({ name }) => name === "headBranch")).toMatchObject({
+    sqlType: "text",
+    nullable: false,
+  });
 });
 
 describe.each([

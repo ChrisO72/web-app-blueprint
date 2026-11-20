@@ -6,11 +6,17 @@ type ModuleId = {
   [Id in SystemId]: SiteConfig["systems"][Id]["kind"] extends "module" ? Id : never;
 }[SystemId];
 
+type ModuleField = {
+  name: string;
+  sqlType: string;
+  nullable: boolean;
+  enumValues?: readonly string[];
+};
+
 export type ModuleType = {
   name: string;
   source: string;
-  definition: string;
-};
+} & ({ definition: string } | { fields: ModuleField[] });
 
 function databaseTypes(schemas: Record<string, Record<string, unknown>>): ModuleType[] {
   return Object.entries(schemas)
@@ -20,13 +26,12 @@ function databaseTypes(schemas: Record<string, Record<string, unknown>>): Module
         .map((table) => ({
           name: getTableName(table),
           source: path.slice(1),
-          definition: Object.entries(getTableColumns(table))
-            .map(([property, column]) => {
-              const values = column.enumValues?.map((value: string) => JSON.stringify(value));
-              const type = values?.length ? values.join(" | ") : column.getSQLType();
-              return `${property}: ${type}${column.notNull ? "" : " | null"}`;
-            })
-            .join("\n"),
+          fields: Object.entries(getTableColumns(table)).map(([name, column]) => ({
+            name,
+            sqlType: column.getSQLType(),
+            nullable: !column.notNull,
+            enumValues: column.enumValues,
+          })),
         })),
     )
     .sort((a, b) => a.name.localeCompare(b.name));

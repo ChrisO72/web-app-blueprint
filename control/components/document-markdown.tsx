@@ -5,6 +5,7 @@ import rehypeSlug from "rehype-slug";
 import { Link, useLocation } from "react-router";
 import { useEffect } from "react";
 import { documentLink } from "../docs";
+import { SyntaxCode } from "./syntax-code";
 import "./document-markdown.css";
 
 export type MarkdownContext = {
@@ -39,6 +40,16 @@ export function DocumentMarkdown({
         remarkPlugins={[remarkFrontmatter, remarkGfm]}
         rehypePlugins={[[rehypeSlug, { prefix: "docs-heading-" }]]}
         components={{
+          code: ({ className, children }) => {
+            const language = className?.match(/(?:^|\s)language-(\S+)/)?.[1];
+            return language && typeof children === "string" ? (
+              <SyntaxCode language={language} className={className}>
+                {children}
+              </SyntaxCode>
+            ) : (
+              <code className={className}>{children}</code>
+            );
+          },
           a: ({ href, children, title }) => {
             const link = documentLink(href ?? "", path, paths, repositoryUrl, branch);
             if (!link) return <span>{children}</span>;

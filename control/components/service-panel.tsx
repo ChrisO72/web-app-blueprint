@@ -1,5 +1,5 @@
 import clsx from "clsx";
-import { useEffect, useState, type ComponentProps, type ReactNode } from "react";
+import { Fragment, useEffect, useState, type ComponentProps, type ReactNode } from "react";
 import { useFetcher } from "react-router";
 import { ArrowPathIcon, ChevronDownIcon, MagnifyingGlassIcon } from "@heroicons/react/16/solid";
 import { site, type SystemId } from "~/system.config";
@@ -25,6 +25,7 @@ import type { ModuleType } from "../module-types.server";
 import { renderResourceName } from "../render";
 import { ServiceMetrics } from "./service-metrics";
 import { systemKinds } from "./system-kind";
+import { SyntaxCode } from "./syntax-code";
 
 const date = (value: string) => new Date(value).toLocaleString();
 
@@ -135,6 +136,37 @@ function IssueRow({ issue }: { issue: TelemetryIssue }) {
         </div>
       )}
     </TelemetryRow>
+  );
+}
+
+function ModuleDefinition({ type }: { type: ModuleType }) {
+  if ("definition" in type) {
+    return <SyntaxCode language="typescript">{type.definition}</SyntaxCode>;
+  }
+
+  return (
+    <code className="control-code">
+      {type.fields.map(({ name, sqlType, nullable, enumValues }, index) => (
+        <Fragment key={name}>
+          {index > 0 && "\n"}
+          <span className="hljs-attr">{name}</span>
+          {": "}
+          {enumValues?.length ? (
+            <span className="hljs-string">
+              {enumValues.map((value) => JSON.stringify(value)).join(" | ")}
+            </span>
+          ) : (
+            <span className="hljs-type">{sqlType}</span>
+          )}
+          {nullable && (
+            <>
+              {" | "}
+              <span className="hljs-literal">null</span>
+            </>
+          )}
+        </Fragment>
+      ))}
+    </code>
   );
 }
 
@@ -380,14 +412,14 @@ export function ServicePanel({
               {types && types.length > 0 && (
                 <section className="space-y-2">
                   <Subheading>Types</Subheading>
-                  {types.map(({ name, source, definition }, index) => (
+                  {types.map((type, index) => (
                     <details
-                      key={name}
+                      key={type.name}
                       open={index === 0}
                       className="group rounded-lg border border-zinc-950/10 dark:border-white/10"
                     >
                       <summary className="flex cursor-pointer list-none items-center justify-between gap-2 rounded-lg px-3 py-2 text-sm font-medium text-zinc-950 outline-offset-[-2px] hover:bg-zinc-50 focus-visible:outline-2 focus-visible:outline-blue-500 dark:text-white dark:hover:bg-white/5 [&::-webkit-details-marker]:hidden">
-                        <span className="wrap-anywhere">{name}</span>
+                        <span className="wrap-anywhere">{type.name}</span>
                         <ChevronDownIcon
                           aria-hidden="true"
                           className="size-4 shrink-0 text-zinc-500 group-open:rotate-180"
@@ -395,10 +427,10 @@ export function ServicePanel({
                       </summary>
                       <div className="space-y-2 px-3 pb-3">
                         <code className="block text-xs wrap-anywhere text-zinc-600 dark:text-zinc-400">
-                          {source}
+                          {type.source}
                         </code>
                         <pre className="rounded-md bg-zinc-50 p-3 text-xs/5 wrap-anywhere whitespace-pre-wrap text-zinc-900 dark:bg-white/5 dark:text-zinc-200">
-                          <code>{definition}</code>
+                          <ModuleDefinition type={type} />
                         </pre>
                       </div>
                     </details>

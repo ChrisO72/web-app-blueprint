@@ -10,9 +10,10 @@ defines the site map. GitHub records live in separate PostgreSQL at `127.0.0.1:5
 
 Site-map cards show one current Render reading per monitored system. PostgreSQL, Control DB,
 and storage prioritize disk usage and capacity. Web prioritizes response time, Worker CPU,
-and Redis memory. Card badges summarize observed utilization. Warning starts at 80% and
-Critical at 95%. Partial or stale readings can also show Warning. Systems without recent
-capacity readings show No data when there is no warning.
+and Redis memory. Process, store, and external service cards show badges that summarize
+observed utilization. Warning starts at 80% and Critical at 95%. Partial or stale readings
+can also show Warning. These cards show No data when recent capacity readings and warnings
+are both absent.
 
 The overview fetches the card readings and their fallbacks. Opening a system loads its additional
 Render metrics above the logs and errors. The section includes CPU,
@@ -80,6 +81,8 @@ must be able to manage the repository's webhooks; organization approval may also
 In the Docs tab, browse Markdown from the connected repository’s default branch, including
 agent skills under `.agents/skills/`. Select **Edit** to change a file, **Preview** to read the
 draft, and **Open pull request** to propose it. Merged edits appear on the next load.
+Use a language tag such as `ts`, `bash`, or `json` on fenced code blocks to highlight them in
+the reader and preview.
 Browsing needs Contents read permission. Proposing edits needs Contents and Pull requests write
 permissions. Use **Replace token** in Settings when updating credentials.
 

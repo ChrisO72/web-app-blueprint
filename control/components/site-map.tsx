@@ -156,12 +156,16 @@ export function SiteMap({
               role="button"
               tabIndex={0}
               aria-label={`View ${system.name} details`}
-              aria-description={[
-                !monitored ? "No Render monitoring" : badge.label,
-                metric && `${metric.label} ${metric.value}`,
-              ]
-                .filter(Boolean)
-                .join(". ")}
+              aria-description={
+                compact
+                  ? undefined
+                  : [
+                      !monitored ? "No Render monitoring" : badge.label,
+                      metric && `${metric.label} ${metric.value}`,
+                    ]
+                      .filter(Boolean)
+                      .join(". ")
+              }
               aria-haspopup="dialog"
               onKeyDown={(event) => {
                 if (event.key === "Enter" || event.key === " ") {
@@ -195,15 +199,26 @@ export function SiteMap({
                 aria-hidden="true"
                 className={kind.color}
               />
-              <rect x={tagX} y="12" width="66" height="20" rx="10" className={badge.background} />
-              <circle cx={tagX + 10} cy="22" r="3" className={`fill-current ${badge.color}`} />
-              <text
-                x={tagX + 17}
-                y="26"
-                className={`fill-current text-[10px] font-medium ${badge.color}`}
-              >
-                {badge.label}
-              </text>
+              {!compact && (
+                <>
+                  <rect
+                    x={tagX}
+                    y="12"
+                    width="66"
+                    height="20"
+                    rx="10"
+                    className={badge.background}
+                  />
+                  <circle cx={tagX + 10} cy="22" r="3" className={`fill-current ${badge.color}`} />
+                  <text
+                    x={tagX + 17}
+                    y="26"
+                    className={`fill-current text-[10px] font-medium ${badge.color}`}
+                  >
+                    {badge.label}
+                  </text>
+                </>
+              )}
               <text
                 x={external ? 44 : 12}
                 y={compact ? 49 : external ? 26 : 61}
