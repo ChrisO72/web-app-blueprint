@@ -7,6 +7,7 @@ const tabs = [
   { name: "Issues", href: "/control/issues" },
   { name: "PRs", href: "/control/prs" },
   { name: "Actions", href: "/control/actions" },
+  { name: "Docs", href: "/control/docs" },
   { name: "Settings", href: "/control/settings" },
 ] as const;
 

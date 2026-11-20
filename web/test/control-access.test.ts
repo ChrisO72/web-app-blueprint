@@ -6,6 +6,8 @@ import { authenticatedUserContext } from "~/web/lib/session.server";
 import { loader as overviewLoader } from "~/web/routes/control/index";
 import { loader as activityLoader } from "~/web/routes/control/activity";
 import { action as settingsAction, loader as settingsLoader } from "~/web/routes/control/settings";
+import { action as docsAction, loader as docsLoader } from "~/web/routes/control/docs";
+import { loadDocuments, proposeDocument } from "~/control/docs.server";
 import { loader as issuesLoader } from "~/web/routes/control/issues";
 import { loader as prsLoader } from "~/web/routes/control/prs";
 import { loader as recordLoader } from "~/web/routes/control/record";
@@ -22,6 +24,7 @@ import { getRecordDetails, listRecords } from "~/control/db/repositories/github.
 import { CONNECTION_ID, TOKEN } from "~/integrations/github/test/fixtures";
 import type { Route } from "../routes/control/+types/index";
 
+vi.mock("~/control/docs.server", () => ({ loadDocuments: vi.fn(), proposeDocument: vi.fn() }));
 vi.mock("~/control/github.server", () => ({
   settingsData: vi.fn(async () => ({
     setup: { ready: false, error: null },
@@ -77,6 +80,7 @@ describe.each([
   { path: "/control", loader: overviewLoader },
   { path: "/control/activity", loader: activityLoader },
   { path: "/control/settings", loader: settingsLoader },
+  { path: "/control/docs", loader: docsLoader },
   { path: "/control/issues", loader: issuesLoader },
   { path: "/control/prs", loader: prsLoader },
   { path: "/control/actions", loader: actionsLoader },
@@ -265,5 +269,27 @@ describe("Control record details", () => {
       record: null,
       message: "This record is no longer available.",
     });
+  });
+});
+
+describe("Docs proposals", () => {
+  beforeEach(() => vi.clearAllMocks());
+  it.each(["user", "viewer"] as const)(
+    "blocks %s before reading or proposing changes",
+    async (role) => {
+      await expect(docsLoader(args(role, "/control/docs"))).rejects.toMatchObject({ status: 302 });
+      await expect(docsAction(args(role, "/control/docs"))).rejects.toMatchObject({ status: 302 });
+      expect(loadDocuments).not.toHaveBeenCalled();
+      expect(proposeDocument).not.toHaveBeenCalled();
+    },
+  );
+  it("rejects cross-origin proposals", async () => {
+    const input = args("admin", "/control/docs");
+    const request = new Request(input.url, {
+      method: "POST",
+      headers: { origin: "https://other.example" },
+    });
+    await expect(docsAction({ ...input, request })).rejects.toMatchObject({ status: 403 });
+    expect(proposeDocument).not.toHaveBeenCalled();
   });
 });

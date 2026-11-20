@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useFetcher, useRevalidator } from "react-router";
 import { z } from "zod";
 import { requireAdmin } from "~/web/lib/session.server";
-import { env } from "~/web/env.server";
+import { requireControlPost } from "./request.server";
 import { parseForm, type ActionData } from "~/web/lib/form";
 import {
   settingsData,
@@ -50,10 +50,7 @@ export async function action({
   context,
 }: Route.ActionArgs): Promise<ActionData & { success?: boolean }> {
   requireAdmin(context);
-  if (request.method !== "POST") throw new Response("Method not allowed", { status: 405 });
-  const origin = request.headers.get("origin");
-  if (origin && origin !== new URL(env.APP_URL).origin)
-    throw new Response("Forbidden", { status: 403 });
+  requireControlPost(request);
   const { data, fieldErrors } = parseForm(await request.formData(), formSchema);
   if (fieldErrors) return { fieldErrors };
   try {
@@ -116,7 +113,9 @@ export default function Settings({ loaderData }: Route.ComponentProps) {
           invalid={!!fetcher.data?.fieldErrors?.token}
         />
         <Description>
-          Repository permissions: Metadata, Issues, Pull requests, and Actions read; Webhooks write.
+          Grant read access to Metadata, Issues, Pull requests, and Actions, plus write access to
+          Webhooks. Docs needs Contents read access for browsing. To propose edits, grant write
+          access to Contents and Pull requests.
         </Description>
         <FieldError name="token" actionData={fetcher.data} />
       </Field>

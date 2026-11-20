@@ -24,6 +24,7 @@ export default [
       route("control/issues", "routes/control/issues.tsx"),
       route("control/prs", "routes/control/prs.tsx"),
       route("control/actions", "routes/control/actions.tsx"),
+      route("control/docs", "routes/control/docs.tsx"),
       route("control/settings", "routes/control/settings.tsx"),
     ]),
     route("account", "routes/account/index.tsx"),

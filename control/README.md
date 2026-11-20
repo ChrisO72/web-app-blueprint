@@ -57,6 +57,12 @@ In Settings, validate a fine-grained token, select a repository, and connect. Th
 Metadata, Issues, Pull requests, and Actions read permissions, plus Webhooks write. Its owner
 must be able to manage the repository's webhooks; organization approval may also be required.
 
+In the Docs tab, browse Markdown from the connected repository’s default branch, including
+agent skills under `.agents/skills/`. Select **Edit** to change a file, **Preview** to read the
+draft, and **Open pull request** to propose it. Merged edits appear on the next load.
+Browsing needs Contents read permission. Proposing edits needs Contents and Pull requests write
+permissions. Use **Replace token** in Settings when updating credentials.
+
 The shared worker imports all available issue, PR, and workflow run records. GitHub stays the
 source of truth; `raw` stores the latest record JSON. Comments, reviews, jobs, logs, and artifact
 files are not imported. Webhooks update the mirror; use Sync now after downtime. Disconnect
