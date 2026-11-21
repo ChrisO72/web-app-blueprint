@@ -5,10 +5,11 @@ import type { Route } from "./+types/index";
 import { requireAdmin } from "~/web/lib/session.server";
 import { getSiteSettings, updateSiteSettings } from "~/db/repositories/settings";
 import { Heading } from "~/web/components/ui-kit/heading";
-import { Description, Field, FieldGroup, Fieldset, Label } from "~/web/components/ui-kit/fieldset";
+import { SettingsRow } from "~/web/components/settings-row";
+import { Field, Label } from "~/web/components/ui-kit/fieldset";
 import { Input } from "~/web/components/ui-kit/input";
 import { Button } from "~/web/components/ui-kit/button";
-import { Switch, SwitchField } from "~/web/components/ui-kit/switch";
+import { Switch } from "~/web/components/ui-kit/switch";
 import { Badge } from "~/web/components/ui-kit/badge";
 import { XMarkIcon } from "@heroicons/react/16/solid";
 import type { ActionData, FieldErrors } from "~/web/lib/form";
@@ -77,20 +78,19 @@ export default function AdminSettingsPage({ loaderData }: Route.ComponentProps) 
   const isSaving = fetcher.state !== "idle";
 
   return (
-    <div>
+    <div className="max-w-4xl">
       <Heading>Settings</Heading>
 
-      <fetcher.Form method="PUT" className="mt-8 max-w-2xl">
-        <Fieldset>
-          <FieldGroup>
+      <fetcher.Form method="PUT" className="mt-6 border-t border-zinc-950/10 dark:border-white/10">
+        <div className="divide-y divide-zinc-950/10 dark:divide-white/10">
+          <SettingsRow
+            title="Allowed signup domains"
+            description="Only users with email addresses from these domains can create an account. Leave empty to allow all domains."
+          >
             <Field>
-              <Label>Allowed signup domains</Label>
-              <Description>
-                Only users with email addresses from these domains can create an account. Leave
-                empty to allow all domains.
-              </Description>
+              <Label className="sr-only">Allowed signup domains</Label>
 
-              <div className="mt-3 flex gap-2">
+              <div className="flex gap-2">
                 <Input
                   value={domainInput}
                   onChange={(e) => setDomainInput(e.target.value)}
@@ -126,22 +126,23 @@ export default function AdminSettingsPage({ loaderData }: Route.ComponentProps) 
                 </div>
               )}
             </Field>
+          </SettingsRow>
 
-            <SwitchField>
-              <Label>Enable signup</Label>
-              <Description>Allow new users to create an account.</Description>
-              <Switch
-                name="signupEnabled"
-                checked={signupEnabled}
-                onChange={setSignupEnabled}
-                color="dark/zinc"
-              />
-              <input type="hidden" name="signupEnabled" value={String(signupEnabled)} />
-            </SwitchField>
+          <SettingsRow title="Enable signup" description="Allow new users to create an account.">
+            <Switch
+              aria-label="Enable signup"
+              name="signupEnabled"
+              checked={signupEnabled}
+              onChange={setSignupEnabled}
+              color="dark/zinc"
+            />
+            <input type="hidden" name="signupEnabled" value={String(signupEnabled)} />
+          </SettingsRow>
 
-            <SwitchField>
-              <Label>Require mail confirmation</Label>
-              <Description>
+          <SettingsRow
+            title="Require mail confirmation"
+            description={
+              <>
                 New users must confirm their email address before they can sign in.
                 {!isEmailConfigured && (
                   <span className="mt-1 block">
@@ -149,24 +150,22 @@ export default function AdminSettingsPage({ loaderData }: Route.ComponentProps) 
                     is used for account confirmation and password resets.
                   </span>
                 )}
-              </Description>
-              <Switch
-                name="requireMailConfirmation"
-                checked={mailConfirmation}
-                onChange={setMailConfirmation}
-                color="dark/zinc"
-                disabled={!isEmailConfigured}
-              />
-              <input
-                type="hidden"
-                name="requireMailConfirmation"
-                value={String(mailConfirmation)}
-              />
-            </SwitchField>
-          </FieldGroup>
-        </Fieldset>
+              </>
+            }
+          >
+            <Switch
+              aria-label="Require mail confirmation"
+              name="requireMailConfirmation"
+              checked={mailConfirmation}
+              onChange={setMailConfirmation}
+              color="dark/zinc"
+              disabled={!isEmailConfigured}
+            />
+            <input type="hidden" name="requireMailConfirmation" value={String(mailConfirmation)} />
+          </SettingsRow>
+        </div>
 
-        <div className="mt-8 flex items-center gap-4">
+        <div className="flex justify-end border-t border-zinc-950/10 py-8 dark:border-white/10">
           <Button type="submit" disabled={isSaving}>
             {isSaving ? "Saving…" : "Save settings"}
           </Button>

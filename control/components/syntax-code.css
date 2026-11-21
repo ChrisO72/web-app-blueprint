@@ -1,0 +1,31 @@
+@reference "../../web/app.css";
+
+.control-code {
+  & :is(.hljs-keyword, .hljs-meta, .hljs-selector-tag) {
+    @apply text-violet-700 dark:text-violet-300;
+  }
+
+  & :is(.hljs-type, .hljs-title, .hljs-built_in, .hljs-section) {
+    @apply text-cyan-800 dark:text-cyan-300;
+  }
+
+  & :is(.hljs-attr, .hljs-attribute, .hljs-property, .hljs-variable, .hljs-name) {
+    @apply text-blue-700 dark:text-blue-300;
+  }
+
+  & :is(.hljs-string, .hljs-regexp, .hljs-addition) {
+    @apply text-emerald-800 dark:text-emerald-300;
+  }
+
+  & :is(.hljs-literal, .hljs-number, .hljs-symbol) {
+    @apply text-amber-800 dark:text-amber-300;
+  }
+
+  & :is(.hljs-comment, .hljs-quote) {
+    @apply text-zinc-600 dark:text-zinc-400;
+  }
+
+  & .hljs-deletion {
+    @apply text-rose-700 dark:text-rose-300;
+  }
+}

@@ -10,11 +10,13 @@
     "rootDirs": [".", "./.react-router/types"],
     "paths": {
       "~/web/*": ["./web/*"],
+      "~/control/*": ["./control/*"],
       "~/db/*": ["./db/*"],
       "~/integrations/*": ["./integrations/*"],
       "~/worker/*": ["./worker/*"],
       "~/telemetry/*": ["./telemetry/*"],
-      "~/runtime/*": ["./runtime/*"]
+      "~/runtime/*": ["./runtime/*"],
+      "~/system.config": ["./system.config.ts"]
     },
     "esModuleInterop": true,
     "verbatimModuleSyntax": true,

@@ -1,8 +1,11 @@
+import { DetailsPanel, DetailsPanelBody, DetailsFields } from "~/web/components/details-panel";
+import { useDetailsSelection } from "~/web/lib/use-details-selection";
 import { EllipsisHorizontalIcon } from "@heroicons/react/16/solid";
 import { useState } from "react";
 import { useFetcher } from "react-router";
 import { z } from "zod";
 import { FormError } from "~/web/components/form-error";
+import { Button } from "~/web/components/ui-kit/button";
 import { Badge } from "~/web/components/ui-kit/badge";
 import {
   Dropdown,
@@ -258,6 +261,10 @@ export default function FilesPage({ loaderData }: Route.ComponentProps) {
     success: "File deleted",
     fieldErrors: "toast",
   });
+  const { selected, open, select, close } = useDetailsSelection(
+    loaderData.files,
+    (file) => file.id,
+  );
   if (!loaderData.storageEnabled) {
     return (
       <div>
@@ -314,7 +321,11 @@ export default function FilesPage({ loaderData }: Route.ComponentProps) {
               </TableHead>
               <TableBody>
                 {files.map((file) => (
-                  <TableRow key={file.id}>
+                  <TableRow
+                    key={file.id}
+                    onOpen={() => select(file)}
+                    title={`View ${file.originalFilename} details`}
+                  >
                     <TableCell className="font-medium">
                       <div className="flex items-center gap-3">
                         <FileThumbnail
@@ -335,6 +346,7 @@ export default function FilesPage({ loaderData }: Route.ComponentProps) {
                     <TableCell>
                       <FileActions
                         fileId={file.id}
+                        onView={() => select(file)}
                         ready={file.status === "ready"}
                         deleting={deleteFetcher.state !== "idle"}
                         onDelete={() => {
@@ -358,6 +370,36 @@ export default function FilesPage({ loaderData }: Route.ComponentProps) {
           </div>
         </>
       )}
+      <DetailsPanel
+        open={open}
+        onClose={close}
+        title={selected ? selected.originalFilename : "Details"}
+        description="File details"
+        actions={
+          selected?.status === "ready" ? (
+            <Button href={`/files/${selected.id}/download`}>Download</Button>
+          ) : undefined
+        }
+      >
+        <DetailsPanelBody>
+          {selected && (
+            <DetailsFields
+              fields={[
+                { label: "ID", value: selected.id },
+                { label: "Type", value: selected.contentType },
+                {
+                  label: "Size",
+                  value: formatFileSize(selected.actualSize ?? selected.expectedSize),
+                },
+                { label: "Status", value: <FileStatus status={selected.status} /> },
+                { label: "Uploaded by", value: selected.uploadedByUserId },
+                { label: "Uploaded", value: new Date(selected.createdAt).toLocaleString() },
+                { label: "Updated", value: new Date(selected.updatedAt).toLocaleString() },
+              ]}
+            />
+          )}
+        </DetailsPanelBody>
+      </DetailsPanel>
     </div>
   );
 }
@@ -405,11 +447,13 @@ function FileStatus({ status }: { status: "pending" | "ready" | "failed" }) {
 }
 
 function FileActions({
+  onView,
   fileId,
   ready,
   deleting,
   onDelete,
 }: {
+  onView: () => void;
   fileId: number;
   ready: boolean;
   deleting: boolean;
@@ -421,6 +465,7 @@ function FileActions({
         <EllipsisHorizontalIcon data-slot="icon" />
       </DropdownButton>
       <DropdownMenu anchor="bottom end">
+        <DropdownItem onClick={onView}>View details</DropdownItem>
         {ready && <DropdownItem href={`/files/${fileId}/download`}>Download</DropdownItem>}
         <DropdownItem onClick={onDelete} disabled={deleting}>
           Delete

@@ -2,8 +2,11 @@ import {
   ArrowRightStartOnRectangleIcon,
   ChevronUpIcon,
   Cog8ToothIcon,
+  CommandLineIcon,
+  ShieldCheckIcon,
 } from "@heroicons/react/16/solid";
 import { useSubmit } from "react-router";
+import type { User } from "~/db/repositories/users";
 import {
   Dropdown,
   DropdownButton,
@@ -17,7 +20,13 @@ import { NavbarItem } from "./ui-kit/navbar";
 import { SidebarItem } from "./ui-kit/sidebar";
 import { getDisplayName, UserAvatar, type AvatarUser } from "./user-avatar";
 
-export function AccountMenu({ user, mobile = false }: { user: AvatarUser; mobile?: boolean }) {
+export function AccountMenu({
+  user,
+  mobile = false,
+}: {
+  user: AvatarUser & Pick<User, "role">;
+  mobile?: boolean;
+}) {
   const submit = useSubmit();
   const { theme, selectTheme } = useTheme();
   return (
@@ -64,6 +73,19 @@ export function AccountMenu({ user, mobile = false }: { user: AvatarUser; mobile
           <Cog8ToothIcon data-slot="icon" />
           <DropdownLabel>Account settings</DropdownLabel>
         </DropdownItem>
+        {user.role === "admin" && (
+          <>
+            <DropdownDivider />
+            <DropdownItem href="/admin">
+              <ShieldCheckIcon data-slot="icon" />
+              <DropdownLabel>Admin</DropdownLabel>
+            </DropdownItem>
+            <DropdownItem href="/control">
+              <CommandLineIcon data-slot="icon" />
+              <DropdownLabel>Control</DropdownLabel>
+            </DropdownItem>
+          </>
+        )}
         <DropdownDivider />
         <DropdownItem onClick={() => submit(null, { method: "post", action: "/logout" })}>
           <ArrowRightStartOnRectangleIcon data-slot="icon" />

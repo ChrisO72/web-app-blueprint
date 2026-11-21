@@ -23,7 +23,7 @@
     "typecheck": "react-router typegen && tsc",
     "lint": "eslint .",
     "check": "npm run format && npm run typecheck && npm run lint && npm test",
-    "docker:up": "docker compose up -d --wait database redis storage",
+    "docker:up": "docker compose up -d --wait database control-database redis storage",
     "docker:down": "docker compose down --remove-orphans",
     "docker:wipe": "docker compose down -v --remove-orphans",
     "format": "npx prettier . --write",
@@ -31,7 +31,11 @@
     "test": "vitest run",
     "sentry": "node --import tsx telemetry/sentry/cli.ts",
     "sentry:upload": "node --import tsx telemetry/sentry/upload.ts",
-    "build:db": "node --import tsx db/build.ts"
+    "build:db": "node --import tsx db/build.ts",
+    "db:generate:control": "drizzle-kit generate --config=control/drizzle.config.ts",
+    "db:migrate:control": "node --import tsx control/db/migrate.ts",
+    "db:studio:control": "drizzle-kit studio --config=control/drizzle.config.ts",
+    "build:db:control": "node --import tsx control/db/build.ts"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1101.0",
@@ -54,12 +58,17 @@
     "isbot": "^5.2.1",
     "jsonwebtoken": "^9.0.3",
     "lettermint": "^2.1.0",
+    "lowlight": "^3.3.0",
     "motion": "^12.43.0",
     "node-cron": "^4.6.0",
     "pg": "^8.22.0",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
+    "react-markdown": "^10.1.0",
     "react-router": "^8.3.0",
+    "rehype-slug": "^6.0.0",
+    "remark-frontmatter": "^5.0.0",
+    "remark-gfm": "^4.0.1",
     "zod": "^4.4.3"
   },
   "devDependencies": {

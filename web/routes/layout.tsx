@@ -1,4 +1,4 @@
-import { Outlet, useLocation } from "react-router";
+import { Outlet, useLocation, useMatch } from "react-router";
 import { SidebarLayout } from "../components/ui-kit/sidebar-layout";
 import {
   Sidebar,
@@ -46,11 +46,13 @@ export function loader({ context }: Route.LoaderArgs) {
 
 export default function Layout({ loaderData }: Route.ComponentProps) {
   const location = useLocation();
+  const controlOverview = useMatch("/control");
   const { user } = loaderData;
   const pathname = location.pathname || "/";
 
   return (
     <SidebarLayout
+      fullWidth={Boolean(controlOverview)}
       navbar={
         <Navbar>
           <NavbarSpacer />
@@ -77,11 +79,6 @@ export default function Layout({ loaderData }: Route.ComponentProps) {
               <SidebarItem href="/items" current={pathname.startsWith("/items")}>
                 <SidebarLabel>Items</SidebarLabel>
               </SidebarItem>
-              {user.role === "admin" && (
-                <SidebarItem href="/admin" current={pathname.startsWith("/admin")}>
-                  <SidebarLabel>Admin</SidebarLabel>
-                </SidebarItem>
-              )}
             </SidebarSection>
           </SidebarBody>
           <SidebarFooter className="max-lg:hidden">

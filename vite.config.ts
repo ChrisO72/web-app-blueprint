@@ -42,11 +42,20 @@ export default defineConfig((configEnv) => ({
       },
       { find: "~/runtime", replacement: fileURLToPath(new URL("./runtime", import.meta.url)) },
       { find: "~/worker", replacement: fileURLToPath(new URL("./worker", import.meta.url)) },
+      {
+        find: "~/system.config",
+        replacement: fileURLToPath(new URL("./system.config.ts", import.meta.url)),
+      },
+      { find: "~/control", replacement: fileURLToPath(new URL("./control", import.meta.url)) },
       { find: "~/web", replacement: fileURLToPath(new URL("./web", import.meta.url)) },
     ],
   },
   test: {
-    include: ["*/test/**/*.test.{ts,tsx}", "integrations/*/test/**/*.test.{ts,tsx}"],
+    include: [
+      "*/test/**/*.test.{ts,tsx}",
+      "integrations/*/test/**/*.test.{ts,tsx}",
+      "control/*/test/**/*.test.{ts,tsx}",
+    ],
     // Satisfy environment validation; unit tests use in-memory dependencies.
     env: {
       NODE_ENV: "test",
@@ -56,6 +65,7 @@ export default defineConfig((configEnv) => ({
       JWT_SECRET: "test-jwt-secret-that-is-at-least-32-characters",
       REFRESH_SECRET: "test-refresh-secret-that-is-at-least-32-characters",
       APP_URL: "http://localhost:5173",
+      CONTROL_DATABASE_URL: "postgresql://test:test@127.0.0.1:1/control_test",
     },
   },
 }));

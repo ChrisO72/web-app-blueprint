@@ -1,0 +1,56 @@
+@reference "../../web/app.css";
+
+.control-markdown {
+  @apply mx-auto max-w-[76ch] space-y-4 text-base/7 break-words text-zinc-800 dark:text-zinc-200;
+  & :is(h1, h2, h3, h4, h5, h6) {
+    @apply mt-8 mb-3 scroll-mt-6 font-semibold tracking-tight text-zinc-950 dark:text-white;
+  }
+  & > :first-child {
+    @apply mt-0;
+  }
+  & h1 {
+    @apply text-3xl;
+  }
+  & h2 {
+    @apply border-b border-zinc-500/20 pb-2 text-2xl;
+  }
+  & h3 {
+    @apply text-xl;
+  }
+  & a {
+    @apply text-blue-700 underline underline-offset-2 dark:text-blue-300;
+  }
+  & ul {
+    @apply list-disc pl-6;
+  }
+  & ol {
+    @apply list-decimal pl-6;
+  }
+  & li.task-list-item {
+    @apply list-none;
+  }
+  & blockquote {
+    @apply border-l-2 border-zinc-400 pl-4 text-zinc-600 dark:text-zinc-400;
+  }
+  & pre {
+    @apply overflow-x-auto rounded-lg bg-zinc-100 p-4 text-sm/6 dark:bg-zinc-800;
+  }
+  & :not(pre) > code {
+    @apply rounded bg-zinc-500/10 px-1 py-0.5 text-[0.9em];
+  }
+  & table {
+    @apply block w-fit max-w-full border-collapse overflow-x-auto text-sm;
+  }
+  & :is(th, td) {
+    @apply border border-zinc-500/25 px-3 py-2;
+  }
+  & th {
+    @apply bg-zinc-500/10;
+  }
+  & hr {
+    @apply border-zinc-500/25;
+  }
+  & img {
+    @apply max-w-full;
+  }
+}

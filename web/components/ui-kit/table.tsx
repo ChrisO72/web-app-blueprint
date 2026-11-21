@@ -58,31 +58,65 @@ export function TableBody(props: React.ComponentPropsWithoutRef<"tbody">) {
   return <tbody {...props} />;
 }
 
-const TableRowContext = createContext<{ href?: string; target?: string; title?: string }>({
+const TableRowContext = createContext<{
+  href?: string;
+  target?: string;
+  title?: string;
+  onOpen?: () => void;
+}>({
   href: undefined,
   target: undefined,
   title: undefined,
 });
 
 export function TableRow({
+  onOpen,
+  onClick,
   href,
   target,
   title,
   className,
   ...props
-}: { href?: string; target?: string; title?: string } & React.ComponentPropsWithoutRef<"tr">) {
+}: {
+  href?: string;
+  target?: string;
+  title?: string;
+  onOpen?: () => void;
+} & React.ComponentPropsWithoutRef<"tr">) {
   let { striped } = useContext(TableContext);
 
   return (
-    <TableRowContext.Provider
-      value={{ href, target, title } as React.ContextType<typeof TableRowContext>}
-    >
+    <TableRowContext.Provider value={{ href, target, title, onOpen }}>
       <tr
         {...props}
+        onClick={(event) => {
+          onClick?.(event);
+          const target = event.target;
+          if (
+            !onOpen ||
+            event.defaultPrevented ||
+            !(target instanceof Element) ||
+            !event.currentTarget.contains(target)
+          )
+            return;
+          if (
+            target.closest(
+              'a, button, input, select, textarea, label, [role="button"], [role="combobox"], [role="menuitem"], [data-row-action]',
+            )
+          )
+            return;
+          if (window.getSelection()?.toString()) return;
+          event.currentTarget
+            .querySelector<HTMLButtonElement>("[data-row-details]")
+            ?.focus({ preventScroll: true });
+          onOpen();
+        }}
         className={clsx(
           className,
           href &&
             "has-[[data-row-link][data-focus]]:outline-2 has-[[data-row-link][data-focus]]:-outline-offset-2 has-[[data-row-link][data-focus]]:outline-blue-500 dark:focus-within:bg-white/2.5",
+          onOpen &&
+            "cursor-pointer focus-within:outline-2 focus-within:-outline-offset-2 focus-within:outline-blue-500 hover:bg-zinc-950/5 dark:hover:bg-white/5",
           striped && "even:bg-zinc-950/2.5 dark:even:bg-white/2.5",
           href && striped && "hover:bg-zinc-950/5 dark:hover:bg-white/5",
           href && !striped && "hover:bg-zinc-950/2.5 dark:hover:bg-white/2.5",
@@ -110,12 +144,12 @@ export function TableHeader({ className, ...props }: React.ComponentPropsWithout
 
 export function TableCell({ className, children, ...props }: React.ComponentPropsWithoutRef<"td">) {
   let { bleed, dense, grid, striped } = useContext(TableContext);
-  let { href, target, title } = useContext(TableRowContext);
+  let { href, target, title, onOpen } = useContext(TableRowContext);
   let [cellRef, setCellRef] = useState<HTMLElement | null>(null);
 
   return (
     <td
-      ref={href ? setCellRef : undefined}
+      ref={href || onOpen ? setCellRef : undefined}
       {...props}
       className={clsx(
         className,
@@ -126,6 +160,16 @@ export function TableCell({ className, children, ...props }: React.ComponentProp
         !bleed && "sm:first:pl-1 sm:last:pr-1",
       )}
     >
+      {onOpen && cellRef?.previousElementSibling === null && (
+        <button
+          type="button"
+          data-row-details
+          className="sr-only"
+          aria-label={title ?? "View details"}
+          aria-haspopup="dialog"
+          onClick={onOpen}
+        />
+      )}
       {href && (
         <Link
           data-row-link

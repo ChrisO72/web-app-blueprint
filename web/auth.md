@@ -31,6 +31,7 @@ export async function loader({ context }: Route.LoaderArgs) {
 }
 ```
 
+The `/control` site map uses the same admin check and appears in the account menu only for admins.
 Apply the same permission check in actions that perform admin-only writes.
 
 ## Server modules
