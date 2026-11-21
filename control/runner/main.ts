@@ -1,24 +1,21 @@
 import { randomUUID } from "node:crypto";
 import { homedir } from "node:os";
-import { isAbsolute, join } from "node:path";
+import { join } from "node:path";
 import { setTimeout as wait } from "node:timers/promises";
 import { z } from "zod";
 import {
   runnerJobSchema,
   runnerLeaseMs,
   runnerPollMs,
-  runnerSecretSchema,
+  runnerProgressMs,
   type RunnerFinish,
   type RunnerJob,
   type RunnerPoll,
 } from "../runner-protocol";
 import { checkoutRepository, runJob, signedIntoChatGpt, type RunResult } from "./codex";
+import { runnerConfigSchema } from "./config";
+import { createCodexProgress } from "./progress";
 
-const configSchema = z.object({
-  CONTROL_RUNNER_URL: z.url({ protocol: /^https$/ }),
-  CONTROL_RUNNER_SECRET: runnerSecretSchema,
-  CONTROL_RUNNER_CHECKOUT: z.string().refine(isAbsolute),
-});
 const pollResponse = z.object({ job: runnerJobSchema.nullable() });
 type ActiveJob = {
   job: RunnerJob;
@@ -26,6 +23,8 @@ type ActiveJob = {
   timer?: ReturnType<typeof setTimeout>;
   completion: Promise<RunResult>;
   result?: RunResult;
+  progress: ReturnType<typeof createCodexProgress>;
+  sentRevision: number;
 };
 
 function renewLocally(active: ActiveJob, sentAt: number) {
@@ -39,14 +38,13 @@ function renewLocally(active: ActiveJob, sentAt: number) {
 async function main() {
   const configFile = process.argv[2];
   if (configFile) process.loadEnvFile(configFile);
-  const parsed = configSchema.safeParse(process.env);
+  const parsed = runnerConfigSchema.safeParse(process.env);
   if (!parsed.success) {
     const fields = parsed.error.issues.map(({ path }) => path.join("."));
     throw new Error("Invalid runner configuration: " + fields.join(", "));
   }
   const config = parsed.data;
   const url = new URL("/control/runner", config.CONTROL_RUNNER_URL);
-  if (url.username || url.password) throw new Error("Use a Control URL without credentials.");
   const worktrees = join(homedir(), ".codex-control", "worktrees");
   const instanceId = randomUUID();
   const shutdown = new AbortController();
@@ -55,6 +53,7 @@ async function main() {
   }
   let active: ActiveJob | undefined;
   let previousNotice: string | undefined;
+  let nextHeartbeat = 0;
 
   async function post(input: RunnerPoll | RunnerFinish) {
     const response = await fetch(url, {
@@ -97,55 +96,75 @@ async function main() {
             taskId: active.job.id,
             leaseId: active.job.leaseId,
             result: active.result,
+            progress: active.progress.snapshot,
           });
           if (response.status === 409)
             process.stderr.write(`Task ${active.job.id} lost its lease.\n`);
           await release();
         }
 
-        const repositoryName =
-          active?.job.repositoryName ?? (await checkoutRepository(config.CONTROL_RUNNER_CHECKOUT));
-        const readiness = !repositoryName
-          ? "checkout"
-          : active || (await signedIntoChatGpt())
-            ? "ready"
-            : "sign-in";
-        const sentAt = Date.now();
-        const response = await post({
-          action: "poll",
-          instanceId,
-          repositoryName,
-          readiness,
-          leaseId: active?.job.leaseId,
-        });
-        if (response.status === 409) {
-          await release();
-        } else {
-          const { job } = pollResponse.parse(await response.json());
-          if (active) {
-            if (!job || active.job.leaseId !== job.leaseId) await release();
-            else renewLocally(active, sentAt);
-          } else if (job && !shutdown.signal.aborted) {
-            const controller = new AbortController();
-            const completion = runJob(
-              job,
-              config.CONTROL_RUNNER_CHECKOUT,
-              worktrees,
-              controller.signal,
-            ).catch((): RunResult => ({ status: "failed", reason: "codex" }));
-            const run: ActiveJob = { job, controller, completion };
-            active = run;
-            renewLocally(run, sentAt);
-            process.stdout.write(`Task ${job.id} running.\n`);
-            void completion.then((result) => {
-              run.result = result;
-              process.stdout.write(
-                `Task ${job.id} ${result.status}${result.status === "failed" ? ` (${result.reason})` : ""}.\n`,
-              );
-            });
+        const snapshot = active?.progress.snapshot;
+        const progress =
+          snapshot && snapshot.revision > (active?.sentRevision ?? 0) ? snapshot : undefined;
+        if (!active || progress || cycleStarted >= nextHeartbeat) {
+          const repositoryName =
+            active?.job.repositoryName ??
+            (await checkoutRepository(config.CONTROL_RUNNER_CHECKOUT));
+          const readiness = !repositoryName
+            ? "checkout"
+            : active || (await signedIntoChatGpt())
+              ? "ready"
+              : "sign-in";
+          const sentAt = Date.now();
+          const response = await post({
+            action: "poll",
+            instanceId,
+            repositoryName,
+            readiness,
+            leaseId: active?.job.leaseId,
+            progress,
+          });
+          if (response.status === 409) {
+            await release();
+          } else {
+            const { job } = pollResponse.parse(await response.json());
+            nextHeartbeat = performance.now() + runnerPollMs;
+            if (active) {
+              if (!job || active.job.leaseId !== job.leaseId) await release();
+              else {
+                renewLocally(active, sentAt);
+                if (progress) active.sentRevision = progress.revision;
+              }
+            } else if (job && !shutdown.signal.aborted) {
+              const controller = new AbortController();
+              const output = createCodexProgress(process.env);
+              const completion = runJob(
+                job,
+                config.CONTROL_RUNNER_CHECKOUT,
+                worktrees,
+                controller.signal,
+                output.record,
+              ).catch((): RunResult => ({ status: "failed", reason: "codex" }));
+              const run: ActiveJob = {
+                job,
+                controller,
+                completion,
+                progress: output,
+                sentRevision: 0,
+              };
+              active = run;
+              renewLocally(run, sentAt);
+              process.stdout.write(`Task ${job.id} running.\n`);
+              void completion.then((result) => {
+                run.result = result;
+                process.stdout.write(
+                  `Task ${job.id} ${result.status}${result.status === "failed" ? ` (${result.reason})` : ""}.\n`,
+                );
+              });
+            }
           }
+          previousNotice = undefined;
         }
-        previousNotice = undefined;
       } catch (error) {
         if (shutdown.signal.aborted) break;
         const notice =
@@ -155,9 +174,16 @@ async function main() {
         if (notice !== previousNotice) process.stderr.write(notice + "\n");
         previousNotice = notice;
       }
-      await wait(Math.max(0, runnerPollMs - (performance.now() - cycleStarted)), null, {
-        signal: shutdown.signal,
-      }).catch(() => undefined);
+      await wait(
+        Math.max(
+          0,
+          (active ? runnerProgressMs : runnerPollMs) - (performance.now() - cycleStarted),
+        ),
+        null,
+        {
+          signal: shutdown.signal,
+        },
+      ).catch(() => undefined);
     }
   } finally {
     await release();

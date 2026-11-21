@@ -114,6 +114,13 @@ with your ChatGPT account. From this project's checkout, start the runner with
 `npm run control:runner -- /absolute/path/to/control-runner.env`. Leave the terminal open while
 accepting tasks. Activity shows the last check-in and keeps queued tasks until the Mac returns.
 
+Open a task in Activity to follow Codex messages and tool status as they arrive. Control keeps
+the most recent output. **Open in Codex** opens the saved chat on the Mac that ran the task.
+
+For local Control with `make dev`, set `CONTROL_RUNNER_SECRET` and the local
+`CONTROL_RUNNER_ORGANIZATION_ID` in the project's `.env`. Set the Mac runner's URL to
+`http://localhost:5173` and restart the runner when switching. Only loopback URLs allow HTTP.
+
 The configured checkout's `origin` must be the connected GitHub repository, and its current
 commit must contain the saved skill version. Each task runs in a separate worktree under
 `~/.codex-control/worktrees/`. Use the Mac's existing tool sign-ins and Codex network settings

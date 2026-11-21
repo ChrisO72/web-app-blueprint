@@ -23,6 +23,7 @@ export default [
       route("control/telemetry", "routes/control/telemetry.ts"),
       route("control/activity", "routes/control/activity.tsx"),
       route("control/activity/options", "routes/control/activity-options.ts"),
+      route("control/activity/output", "routes/control/activity-output.ts"),
       route("control/issues", "routes/control/issues.tsx"),
       route("control/prs", "routes/control/prs.tsx"),
       route("control/actions", "routes/control/actions.tsx"),

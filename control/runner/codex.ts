@@ -3,8 +3,8 @@ import { mkdir, realpath } from "node:fs/promises";
 import { createInterface } from "node:readline";
 import { join } from "node:path";
 import { promisify } from "node:util";
-import { z } from "zod";
 import type { RunnerFinish, RunnerJob } from "../runner-protocol";
+import { codexEventSchema, type CodexEvent } from "./progress";
 
 const execute = promisify(execFile);
 const chatGptConfig = ['forced_login_method="chatgpt"', 'model_provider="openai"'];
@@ -91,13 +91,12 @@ export async function signedIntoChatGpt() {
   }
 }
 
-const codexEvent = z.object({
-  type: z.string(),
-  message: z.string().optional(),
-  error: z.object({ message: z.string() }).optional(),
-});
-
-function invokeCodex(args: string[], cwd: string, signal: AbortSignal): Promise<RunResult> {
+function invokeCodex(
+  args: string[],
+  cwd: string,
+  signal: AbortSignal,
+  onEvent: (event: CodexEvent) => void,
+): Promise<RunResult> {
   return new Promise((resolve) => {
     if (signal.aborted) {
       resolve(failed("expired"));
@@ -116,9 +115,10 @@ function invokeCodex(args: string[], cwd: string, signal: AbortSignal): Promise<
     let killTimer: ReturnType<typeof setTimeout> | undefined;
     lines.on("line", (line) => {
       try {
-        const parsed = codexEvent.safeParse(JSON.parse(line));
+        const parsed = codexEventSchema.safeParse(JSON.parse(line));
         if (!parsed.success) return;
         const event = parsed.data;
+        onEvent(event);
         if (event.type === "turn.completed") completed = true;
         if (event.type === "turn.failed") turnFailed = true;
         if (event.type === "turn.failed" || event.type === "error") {
@@ -177,6 +177,7 @@ export async function runJob(
   checkout: string,
   worktrees: string,
   signal: AbortSignal,
+  onEvent: (event: CodexEvent) => void,
 ): Promise<RunResult> {
   if (signal.aborted) return failed("expired");
   const repo = await checkoutRepository(checkout);
@@ -224,5 +225,5 @@ export async function runJob(
   } catch {
     return failed("skill");
   }
-  return invokeCodex(codexArgs(job, worktree, skillName), worktree, signal);
+  return invokeCodex(codexArgs(job, worktree, skillName), worktree, signal, onEvent);
 }

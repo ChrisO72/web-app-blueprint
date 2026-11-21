@@ -9,6 +9,7 @@ import {
   loader as activityLoader,
 } from "~/web/routes/control/activity";
 import { loader as activityOptionsLoader } from "~/web/routes/control/activity-options";
+import { loader as activityOutputLoader } from "~/web/routes/control/activity-output";
 import { action as runnerAction } from "~/web/routes/control/runner";
 import { action as settingsAction, loader as settingsLoader } from "~/web/routes/control/settings";
 import { action as docsAction, loader as docsLoader } from "~/web/routes/control/docs";
@@ -30,6 +31,7 @@ import { pollRunner } from "~/control/db/repositories/runner.server";
 import {
   createTask,
   findTaskSubmission,
+  getTaskProgress,
   listTasks,
   listTaskTargets,
 } from "~/control/db/repositories/tasks.server";
@@ -56,6 +58,7 @@ vi.mock("~/control/db/repositories/tasks.server", async (importOriginal) => ({
     totalCount: 0,
   })),
   listTaskTargets: vi.fn(async () => null),
+  getTaskProgress: vi.fn(async () => null),
   findTaskSubmission: vi.fn(async () => null),
   createTask: vi.fn(async () => ({ outcome: "created" as const })),
 }));
@@ -86,12 +89,12 @@ vi.mock("~/control/db/repositories/github.server", () => ({
   })),
 }));
 
-function args(role: User["role"], path: string) {
+function args(role: User["role"], path: string, organizationId = 1) {
   const context = new RouterContextProvider();
   const now = new Date();
   context.set(authenticatedUserContext, {
     id: 1,
-    organizationId: 1,
+    organizationId,
     email: "user@example.com",
     firstName: "User",
     lastName: null,
@@ -208,6 +211,14 @@ describe("Control activity", () => {
     expect(listTasks).toHaveBeenCalledExactlyOnceWith(1, 3, 25);
   });
 
+  it("scopes Codex output to the authenticated admin's organization", async () => {
+    const path = `/control/activity/output?taskId=${selection.id}&organizationId=99`;
+    await expect(activityOutputLoader(args("viewer", path))).rejects.toMatchObject({ status: 302 });
+    expect(getTaskProgress).not.toHaveBeenCalled();
+    await activityOutputLoader(args("admin", path, 7));
+    expect(getTaskProgress).toHaveBeenCalledExactlyOnceWith(7, selection.id);
+  });
+
   it("searches synced targets by the trimmed query", async () => {
     await activityOptionsLoader(args("admin", "/control/activity/options?q=+%2342+"));
     expect(listTaskTargets).toHaveBeenCalledExactlyOnceWith("#42");
@@ -320,6 +331,7 @@ describe("Control activity", () => {
       failure: null,
       leaseId: null,
       leaseExpiresAt: null,
+      codexProgress: null,
     });
     expect(await createTaskAction(submission("admin"))).toEqual({ success: true });
     expect(loadRepositorySkills).not.toHaveBeenCalled();

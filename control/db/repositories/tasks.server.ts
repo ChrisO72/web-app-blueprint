@@ -120,6 +120,14 @@ export async function listTaskTargets(query: string) {
   return { connectionId: connection.id, targets };
 }
 
+export async function getTaskProgress(organizationId: number, taskId: string) {
+  const [task] = await getDatabase()
+    .select({ progress: controlTasks.codexProgress })
+    .from(controlTasks)
+    .where(and(eq(controlTasks.organizationId, organizationId), eq(controlTasks.id, taskId)));
+  return task?.progress ?? null;
+}
+
 export async function findTaskSubmission(owner: TaskOwner, id: string) {
   const [task] = await getDatabase().select().from(controlTasks).where(ownedSubmission(owner, id));
   return task ?? null;

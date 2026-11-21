@@ -1,0 +1,1 @@
+ALTER TABLE "control_tasks" ADD COLUMN "codex_progress" jsonb;

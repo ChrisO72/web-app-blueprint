@@ -1,5 +1,5 @@
 import { PgDialect } from "drizzle-orm/pg-core";
-import type { SQL } from "drizzle-orm";
+import { SQL } from "drizzle-orm";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { RunnerJob, RunnerPoll } from "~/control/runner-protocol";
 import { finishRunnerTask, pollRunner } from "../repositories/runner.server";
@@ -125,5 +125,39 @@ describe("Control runner leases", () => {
     const guard = new PgDialect().sqlToQuery(state.filters[1]);
     expect(guard.sql).toContain('"lease_expires_at" > clock_timestamp()');
     expect(guard.params).toEqual([7, job.id, job.leaseId, "running"]);
+  });
+
+  it("saves the newest output on a renewal and flushes the final snapshot with completion", async () => {
+    const owner = { instanceId: input.instanceId };
+    const progress = { revision: 3, entries: [], truncated: false };
+    state.responses = [
+      [owner],
+      [],
+      [{ id: job.id, leaseId: job.leaseId }],
+      [job],
+      [owner],
+      [{ id: job.id }],
+    ];
+    expect(await pollRunner(7, { ...input, leaseId: job.leaseId, progress })).toEqual({ job });
+    const final = { ...progress, revision: 4 };
+    expect(
+      await finishRunnerTask(7, {
+        action: "finish",
+        instanceId: input.instanceId,
+        taskId: job.id,
+        leaseId: job.leaseId,
+        result: { status: "done" },
+        progress: final,
+      }),
+    ).toBe(true);
+
+    const renewal = state.edits[2].codexProgress;
+    const completion = state.edits[3].codexProgress;
+    if (!(renewal instanceof SQL) || !(completion instanceof SQL))
+      throw new Error("Missing output write");
+    const dialect = new PgDialect();
+    expect(dialect.sqlToQuery(renewal).sql).toContain("->>'revision'");
+    expect(dialect.sqlToQuery(renewal).params).toEqual([3, JSON.stringify(progress)]);
+    expect(dialect.sqlToQuery(completion).params).toEqual([4, JSON.stringify(final)]);
   });
 });

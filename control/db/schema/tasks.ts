@@ -1,6 +1,6 @@
-import { bigint, index, integer, pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
+import { bigint, index, integer, jsonb, pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
-import { runnerReadiness, taskFailureReasons } from "~/control/runner-protocol";
+import { runnerReadiness, taskFailureReasons, type CodexProgress } from "~/control/runner-protocol";
 import { taskEfforts, taskModels, taskStatuses, taskTargetKinds } from "~/control/tasks";
 
 export const controlTasks = pgTable(
@@ -29,6 +29,7 @@ export const controlTasks = pgTable(
     failure: text({ enum: taskFailureReasons }),
     leaseId: uuid("lease_id"),
     leaseExpiresAt: timestamp("lease_expires_at", { withTimezone: true }),
+    codexProgress: jsonb("codex_progress").$type<CodexProgress>(),
   },
   (table) => [
     index("control_tasks_history_idx").on(table.organizationId, table.createdAt, table.id),

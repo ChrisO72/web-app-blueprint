@@ -3,6 +3,7 @@ import { and, asc, eq, gt, isNotNull, lte, ne, or, sql } from "drizzle-orm";
 import {
   runnerJobSchema,
   runnerLeaseMs,
+  type CodexProgress,
   type RunnerFinish,
   type RunnerPoll,
 } from "~/control/runner-protocol";
@@ -26,6 +27,15 @@ const jobColumns = {
   model: controlTasks.model,
   effort: controlTasks.effort,
 };
+
+function savedProgress(progress: CodexProgress | undefined) {
+  if (!progress) return {};
+  return {
+    codexProgress: sql`case
+      when coalesce((${controlTasks.codexProgress}->>'revision')::bigint, 0) < ${progress.revision}
+      then ${JSON.stringify(progress)}::jsonb else ${controlTasks.codexProgress} end`,
+  };
+}
 
 async function expireLeases(
   db: Pick<ReturnType<typeof getDatabase>, "update">,
@@ -106,7 +116,7 @@ export async function pollRunner(organizationId: number, input: RunnerPoll) {
       // An idle poll from the same instance can recover a lost initial claim response.
       const [renewed] = await tx
         .update(controlTasks)
-        .set({ leaseExpiresAt: nextExpiry })
+        .set({ leaseExpiresAt: nextExpiry, ...savedProgress(input.progress) })
         .where(
           and(
             taskScope,
@@ -187,6 +197,7 @@ export async function finishRunnerTask(organizationId: number, input: RunnerFini
         failure: input.result.status === "failed" ? input.result.reason : null,
         finishedAt: now,
         leaseExpiresAt: null,
+        ...savedProgress(input.progress),
       })
       .where(and(claim, eq(controlTasks.status, "running"), gt(controlTasks.leaseExpiresAt, now)))
       .returning({ id: controlTasks.id });

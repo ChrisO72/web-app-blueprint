@@ -41,6 +41,7 @@ import { requireAdmin } from "~/web/lib/session.server";
 import { useDetailsSelection } from "~/web/lib/use-details-selection";
 import { Pagination } from "~/web/routes/items/Pagination";
 import { RunTaskDialog } from "./RunTaskDialog";
+import { TaskCodexOutput, useTaskCodexOutput } from "./TaskCodexOutput";
 import { requireControlPost } from "./request.server";
 import { configuredRunnerOrganization } from "./runner-auth.server";
 import type { Route } from "./+types/activity";
@@ -138,6 +139,9 @@ export function meta() {
 export default function Activity({ loaderData }: Route.ComponentProps) {
   const { tasks, page, pageSize, totalCount, totalPages, runnerEnabled, runner } = loaderData;
   const { selected, open, select, close } = useDetailsSelection(tasks, (task) => task.id);
+  const live = selected?.status === "queued" || selected?.status === "running";
+  const codexOutput = useTaskCodexOutput(open ? selected?.id : undefined, live);
+  const threadId = codexOutput?.progress?.threadId;
   const { revalidate, state } = useRevalidator();
   useEffect(() => {
     if (!runnerEnabled || state !== "idle") return;
@@ -262,9 +266,16 @@ export default function Activity({ loaderData }: Route.ComponentProps) {
         }
         actions={
           selected && (
-            <Button href={selected.targetUrl} target="_blank" rel="noreferrer">
-              Open in GitHub ↗
-            </Button>
+            <>
+              {threadId && (
+                <Button outline href={`codex://threads/${threadId}`} reloadDocument>
+                  Open in Codex
+                </Button>
+              )}
+              <Button href={selected.targetUrl} target="_blank" rel="noreferrer">
+                Open in GitHub ↗
+              </Button>
+            </>
           )
         }
       >
@@ -314,6 +325,15 @@ export default function Activity({ loaderData }: Route.ComponentProps) {
                     ]
                   : []),
               ]}
+            />
+          )}
+          {selected && (
+            <TaskCodexOutput
+              key={selected.id}
+              progress={codexOutput?.progress}
+              error={codexOutput?.error}
+              live={live}
+              loading={!codexOutput}
             />
           )}
         </DetailsPanelBody>
