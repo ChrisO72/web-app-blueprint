@@ -9,6 +9,7 @@ import {
   loader as activityLoader,
 } from "~/web/routes/control/activity";
 import { loader as activityOptionsLoader } from "~/web/routes/control/activity-options";
+import { action as runnerAction } from "~/web/routes/control/runner";
 import { action as settingsAction, loader as settingsLoader } from "~/web/routes/control/settings";
 import { action as docsAction, loader as docsLoader } from "~/web/routes/control/docs";
 import { loadDocuments, loadRepositorySkills, proposeDocument } from "~/control/docs.server";
@@ -25,6 +26,7 @@ import {
   publicError,
 } from "~/control/github.server";
 import { getRecordDetails, listRecords } from "~/control/db/repositories/github.server";
+import { pollRunner } from "~/control/db/repositories/runner.server";
 import {
   createTask,
   findTaskSubmission,
@@ -38,6 +40,11 @@ vi.mock("~/control/docs.server", () => ({
   loadDocuments: vi.fn(),
   loadRepositorySkills: vi.fn(),
   proposeDocument: vi.fn(),
+}));
+vi.mock("~/control/db/repositories/runner.server", () => ({
+  getRunnerPresence: vi.fn(async () => null),
+  pollRunner: vi.fn(async () => ({ job: null })),
+  finishRunnerTask: vi.fn(async () => false),
 }));
 vi.mock("~/control/db/repositories/tasks.server", async (importOriginal) => ({
   ...(await importOriginal<typeof import("~/control/db/repositories/tasks.server")>()),
@@ -156,22 +163,32 @@ it("provides schema-derived entity fields in the Control overview", () => {
 });
 
 describe("Control activity", () => {
+  const runnerSecret = env.CONTROL_RUNNER_SECRET;
+  const runnerOrganization = env.CONTROL_RUNNER_ORGANIZATION_ID;
   const selection = {
     id: "7e0547a5-3f88-41c0-ae4e-b6f70efca686",
     connectionId: CONNECTION_ID,
     targetKind: "issue",
     targetId: "42",
     skillPath: ".agents/skills/blueprint-build/SKILL.md",
+    model: "gpt-6.2-astra",
+    effort: "high",
   };
   const skillSha = "a".repeat(40);
 
   beforeEach(() => {
     vi.clearAllMocks();
+    env.CONTROL_RUNNER_SECRET = undefined;
+    env.CONTROL_RUNNER_ORGANIZATION_ID = undefined;
     vi.mocked(loadRepositorySkills).mockResolvedValue({
       connectionId: CONNECTION_ID,
       repositoryId: 123,
       skills: [{ name: "blueprint-build", path: selection.skillPath, sha: skillSha }],
     });
+  });
+  afterEach(() => {
+    env.CONTROL_RUNNER_SECRET = runnerSecret;
+    env.CONTROL_RUNNER_ORGANIZATION_ID = runnerOrganization;
   });
 
   function submission(role: User["role"], origin = env.APP_URL) {
@@ -226,7 +243,47 @@ describe("Control activity", () => {
       createdByUserId: 1,
       repositoryId: 123,
       skillSha,
+      status: "created",
     });
+  });
+
+  it("queues the requested model and effort when the authenticated organization has a runner", async () => {
+    env.CONTROL_RUNNER_SECRET = "a".repeat(64);
+    env.CONTROL_RUNNER_ORGANIZATION_ID = 1;
+    expect(await createTaskAction(submission("admin"))).toEqual({ success: true });
+    expect(createTask).toHaveBeenCalledWith(
+      expect.objectContaining({
+        status: "queued",
+        model: selection.model,
+        effort: selection.effort,
+      }),
+    );
+  });
+
+  it("uses the runner secret's organization for claims and rejects unauthenticated check-ins", async () => {
+    env.CONTROL_RUNNER_SECRET = "a".repeat(64);
+    env.CONTROL_RUNNER_ORGANIZATION_ID = 7;
+    const base = args("viewer", "/control/runner");
+    const input = {
+      action: "poll",
+      instanceId: CONNECTION_ID,
+      repositoryName: "owner/repo",
+      readiness: "ready",
+    };
+    function request(secret: string) {
+      return {
+        ...base,
+        request: new Request(base.url, {
+          method: "POST",
+          headers: { authorization: "Bearer " + secret },
+          body: JSON.stringify({ ...input, organizationId: 99 }),
+        }),
+      };
+    }
+    expect((await runnerAction(request("b".repeat(64)))).status).toBe(401);
+    expect(pollRunner).not.toHaveBeenCalled();
+    expect((await runnerAction(request(env.CONTROL_RUNNER_SECRET))).status).toBe(200);
+    expect(pollRunner).toHaveBeenCalledExactlyOnceWith(7, input);
   });
 
   it("rejects a skill that disappeared after the picker loaded", async () => {
@@ -245,6 +302,8 @@ describe("Control activity", () => {
     vi.mocked(findTaskSubmission).mockResolvedValueOnce({
       ...selection,
       targetKind: "issue",
+      model: "gpt-6.2-astra",
+      effort: "high",
       targetId: 42,
       organizationId: 1,
       createdByUserId: 1,
@@ -256,6 +315,11 @@ describe("Control activity", () => {
       targetTitle: "Example",
       targetUrl: "https://github.com/owner/repo/issues/15",
       skillSha,
+      startedAt: null,
+      finishedAt: null,
+      failure: null,
+      leaseId: null,
+      leaseExpiresAt: null,
     });
     expect(await createTaskAction(submission("admin"))).toEqual({ success: true });
     expect(loadRepositorySkills).not.toHaveBeenCalled();

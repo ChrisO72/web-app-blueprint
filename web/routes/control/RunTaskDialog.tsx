@@ -1,7 +1,17 @@
 import { PlayIcon } from "@heroicons/react/16/solid";
 import { useEffect, useState } from "react";
 import { useFetcher } from "react-router";
-import { taskTargetSearch, type TaskSkill, type TaskTarget } from "~/control/tasks";
+import {
+  defaultTaskEffort,
+  defaultTaskModel,
+  taskEffortLabels,
+  taskEfforts,
+  taskModelLabels,
+  taskModels,
+  taskTargetSearch,
+  type TaskSkill,
+  type TaskTarget,
+} from "~/control/tasks";
 import { FieldError } from "~/web/components/field-error";
 import { FormError } from "~/web/components/form-error";
 import { Button } from "~/web/components/ui-kit/button";
@@ -19,6 +29,7 @@ import {
   DialogTitle,
 } from "~/web/components/ui-kit/dialog";
 import { Field, Label } from "~/web/components/ui-kit/fieldset";
+import { Select } from "~/web/components/ui-kit/select";
 import { Text, TextLink } from "~/web/components/ui-kit/text";
 import { useFetcherToast } from "~/web/lib/use-fetcher-toast";
 import type { action } from "./activity";
@@ -43,7 +54,13 @@ function PickerError({ error, retry }: { error: string; retry: () => void }) {
   );
 }
 
-export function RunTaskDialog({ onCreated }: { onCreated: () => void }) {
+export function RunTaskDialog({
+  runnerEnabled,
+  onCreated,
+}: {
+  runnerEnabled: boolean;
+  onCreated: () => void;
+}) {
   const [open, setOpen] = useState(false);
   const [submissionId, setSubmissionId] = useState("");
   const [query, setQuery] = useState("");
@@ -53,7 +70,7 @@ export function RunTaskDialog({ onCreated }: { onCreated: () => void }) {
   const skillFetcher = useFetcher<typeof optionsLoader>();
   const creation = useFetcher<typeof action>();
   const busy = creation.state !== "idle";
-  useFetcherToast(creation, { success: "Task created" });
+  useFetcherToast(creation, { success: runnerEnabled ? "Task queued" : "Task created" });
 
   const { load: loadTargets } = targetFetcher;
   const targetUrl = optionsUrl + "?" + new URLSearchParams({ q: query });
@@ -235,6 +252,40 @@ export function RunTaskDialog({ onCreated }: { onCreated: () => void }) {
                 <Text role="status">No repository skills found on the default branch.</Text>
               )}
             </Field>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <Field>
+                <Label>Model</Label>
+                <Select
+                  name="model"
+                  defaultValue={defaultTaskModel}
+                  onChange={resetSubmission}
+                  disabled={busy}
+                >
+                  {taskModels.map((model) => (
+                    <option key={model} value={model}>
+                      {taskModelLabels[model]}
+                    </option>
+                  ))}
+                </Select>
+                <FieldError name="model" actionData={creation.data} />
+              </Field>
+              <Field>
+                <Label>Effort</Label>
+                <Select
+                  name="effort"
+                  defaultValue={defaultTaskEffort}
+                  onChange={resetSubmission}
+                  disabled={busy}
+                >
+                  {taskEfforts.map((effort) => (
+                    <option key={effort} value={effort}>
+                      {taskEffortLabels[effort]}
+                    </option>
+                  ))}
+                </Select>
+                <FieldError name="effort" actionData={creation.data} />
+              </Field>
+            </div>
             {!disconnected && connectionChanged && (
               <Text role="status">The repository connection changed. Reopen the task dialog.</Text>
             )}
@@ -245,7 +296,7 @@ export function RunTaskDialog({ onCreated }: { onCreated: () => void }) {
             Cancel
           </Button>
           <Button type="submit" form="control-create-task" disabled={busy || !canCreate}>
-            {busy ? "Creating…" : "Create task"}
+            {runnerEnabled ? (busy ? "Queuing…" : "Run task") : busy ? "Creating…" : "Create task"}
           </Button>
         </DialogActions>
       </Dialog>

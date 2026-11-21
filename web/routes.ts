@@ -11,6 +11,7 @@ export default [
   route("confirm-email", "routes/auth/confirm-email.tsx"),
 
   route("webhooks/github", "routes/webhooks/github.ts"),
+  route("control/runner", "routes/control/runner.ts"),
 
   // Protected routes
   layout("routes/layout.tsx", [

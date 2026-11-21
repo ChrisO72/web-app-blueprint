@@ -1,6 +1,7 @@
-import { useCallback } from "react";
-import { useSearchParams } from "react-router";
+import { useCallback, useEffect, type ComponentProps } from "react";
+import { useRevalidator, useSearchParams } from "react-router";
 import { z } from "zod";
+import { getRunnerPresence } from "~/control/db/repositories/runner.server";
 import {
   createTask,
   findTaskSubmission,
@@ -11,7 +12,17 @@ import { documentLabel } from "~/control/docs";
 import { loadRepositorySkills } from "~/control/docs.server";
 import { publicError } from "~/control/github.server";
 import { parseControlPage, recordPageSizeOptions } from "~/control/pagination";
-import { repositorySkillPath, taskTargetKinds } from "~/control/tasks";
+import { runnerPollMs, taskFailureLabels } from "~/control/runner-protocol";
+import {
+  defaultTaskEffort,
+  defaultTaskModel,
+  repositorySkillPath,
+  taskEffortLabels,
+  taskEfforts,
+  taskModelLabels,
+  taskModels,
+  taskTargetKinds,
+} from "~/control/tasks";
 import { DetailsFields, DetailsPanel, DetailsPanelBody } from "~/web/components/details-panel";
 import { Badge } from "~/web/components/ui-kit/badge";
 import { Button } from "~/web/components/ui-kit/button";
@@ -31,6 +42,7 @@ import { useDetailsSelection } from "~/web/lib/use-details-selection";
 import { Pagination } from "~/web/routes/items/Pagination";
 import { RunTaskDialog } from "./RunTaskDialog";
 import { requireControlPost } from "./request.server";
+import { configuredRunnerOrganization } from "./runner-auth.server";
 import type { Route } from "./+types/activity";
 
 const submissionSchema = z.object({
@@ -39,7 +51,16 @@ const submissionSchema = z.object({
   targetKind: z.enum(taskTargetKinds, { error: "Select an issue or pull request." }),
   targetId: z.coerce.number().int().positive({ error: "Select an issue or pull request." }),
   skillPath: z.string().max(1024).regex(repositorySkillPath, "Select a repository skill."),
+  model: z.enum(taskModels).default(defaultTaskModel),
+  effort: z.enum(taskEfforts).default(defaultTaskEffort),
 });
+const statusColors = {
+  created: "zinc",
+  queued: "amber",
+  running: "blue",
+  done: "green",
+  failed: "red",
+} satisfies Record<string, ComponentProps<typeof Badge>["color"]>;
 const createdAtFormat = new Intl.DateTimeFormat("en", {
   dateStyle: "medium",
   timeStyle: "short",
@@ -49,7 +70,9 @@ const createdAtFormat = new Intl.DateTimeFormat("en", {
 export async function loader({ context, request }: Route.LoaderArgs) {
   const { user } = requireAdmin(context);
   const { page, pageSize } = parseControlPage(new URL(request.url).searchParams);
-  return listTasks(user.organizationId, page, pageSize);
+  const runnerEnabled = user.organizationId === configuredRunnerOrganization();
+  const runner = runnerEnabled ? await getRunnerPresence(user.organizationId) : null;
+  return { ...(await listTasks(user.organizationId, page, pageSize)), runnerEnabled, runner };
 }
 
 export async function action({
@@ -91,6 +114,7 @@ export async function action({
       ...owner,
       repositoryId: catalog.repositoryId,
       skillSha: skill.sha,
+      status: user.organizationId === configuredRunnerOrganization() ? "queued" : "created",
     });
     switch (outcome) {
       case "created":
@@ -112,8 +136,21 @@ export function meta() {
 }
 
 export default function Activity({ loaderData }: Route.ComponentProps) {
-  const { tasks, page, pageSize, totalCount, totalPages } = loaderData;
+  const { tasks, page, pageSize, totalCount, totalPages, runnerEnabled, runner } = loaderData;
   const { selected, open, select, close } = useDetailsSelection(tasks, (task) => task.id);
+  const { revalidate, state } = useRevalidator();
+  useEffect(() => {
+    if (!runnerEnabled || state !== "idle") return;
+    function refresh() {
+      if (document.visibilityState === "visible") void revalidate();
+    }
+    const timer = window.setInterval(refresh, runnerPollMs);
+    document.addEventListener("visibilitychange", refresh);
+    return () => {
+      window.clearInterval(timer);
+      document.removeEventListener("visibilitychange", refresh);
+    };
+  }, [revalidate, runnerEnabled, state]);
   const [params, setParams] = useSearchParams();
   const goToFirstPage = useCallback(() => {
     if (!params.has("page") || params.get("page") === "1") return;
@@ -125,8 +162,30 @@ export default function Activity({ loaderData }: Route.ComponentProps) {
   return (
     <div className="flex min-h-0 min-w-0 flex-1 flex-col">
       <header className="flex shrink-0 flex-wrap items-center justify-between gap-3">
-        <Heading>Activity</Heading>
-        <RunTaskDialog onCreated={goToFirstPage} />
+        <div>
+          <Heading>Activity</Heading>
+          {runnerEnabled && (
+            <Text className="mt-1">
+              Mac runner:{" "}
+              {!runner || runner.offline
+                ? "Offline"
+                : runner.readiness === "sign-in"
+                  ? "Needs ChatGPT sign-in"
+                  : runner.readiness === "checkout"
+                    ? "Check repository setup"
+                    : "Online"}
+              {runner && (
+                <>
+                  {" · Last check-in "}
+                  <time dateTime={new Date(runner.lastSeenAt).toISOString()}>
+                    {createdAtFormat.format(new Date(runner.lastSeenAt))} UTC
+                  </time>
+                </>
+              )}
+            </Text>
+          )}
+        </div>
+        <RunTaskDialog runnerEnabled={runnerEnabled} onCreated={goToFirstPage} />
       </header>
       {tasks.length ? (
         <>
@@ -160,7 +219,12 @@ export default function Activity({ loaderData }: Route.ComponentProps) {
                         {documentLabel(task.skillPath) ?? task.skillPath}
                       </TableCell>
                       <TableCell>
-                        <Badge className="rounded-full! px-2! capitalize">{task.status}</Badge>
+                        <Badge
+                          color={statusColors[task.status]}
+                          className="rounded-full! px-2! capitalize"
+                        >
+                          {task.status}
+                        </Badge>
                       </TableCell>
                       <TableCell className="text-zinc-500 tabular-nums dark:text-zinc-400">
                         <time dateTime={createdAt.toISOString()}>
@@ -211,14 +275,44 @@ export default function Activity({ loaderData }: Route.ComponentProps) {
                 {
                   label: "Status",
                   value: (
-                    <Badge className="rounded-full! px-2! capitalize">{selected.status}</Badge>
+                    <Badge
+                      color={statusColors[selected.status]}
+                      className="rounded-full! px-2! capitalize"
+                    >
+                      {selected.status}
+                    </Badge>
                   ),
                 },
                 { label: "Skill", value: selected.skillPath },
+                ...(selected.model && selected.effort
+                  ? [
+                      { label: "Model", value: taskModelLabels[selected.model] },
+                      { label: "Effort", value: taskEffortLabels[selected.effort] },
+                    ]
+                  : []),
+                ...(selected.failure
+                  ? [{ label: "Failure", value: taskFailureLabels[selected.failure] }]
+                  : []),
                 {
                   label: "Created (UTC)",
                   value: createdAtFormat.format(new Date(selected.createdAt)),
                 },
+                ...(selected.startedAt
+                  ? [
+                      {
+                        label: "Started (UTC)",
+                        value: createdAtFormat.format(new Date(selected.startedAt)),
+                      },
+                    ]
+                  : []),
+                ...(selected.finishedAt
+                  ? [
+                      {
+                        label: "Finished (UTC)",
+                        value: createdAtFormat.format(new Date(selected.finishedAt)),
+                      },
+                    ]
+                  : []),
               ]}
             />
           )}

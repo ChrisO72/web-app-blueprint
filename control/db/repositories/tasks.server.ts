@@ -1,13 +1,23 @@
 import { and, count, desc, eq, isNotNull, isNull, ne, or, sql } from "drizzle-orm";
-import { taskTargetKinds, type TaskTarget } from "~/control/tasks";
+import {
+  defaultTaskEffort,
+  defaultTaskModel,
+  taskTargetKinds,
+  type TaskTarget,
+} from "~/control/tasks";
 import { getDatabase } from "../db.server";
 import { githubConnections, githubIssues, githubPulls } from "../schema/github";
 import { controlTasks, type ControlTask } from "../schema/tasks";
 import { getPublicConnection } from "./github.server";
 
 type TaskOwner = Pick<ControlTask, "organizationId" | "createdByUserId">;
-type TaskSelection = Pick<ControlTask, "connectionId" | "targetKind" | "targetId" | "skillPath">;
-type NewTask = TaskOwner & TaskSelection & Pick<ControlTask, "id" | "repositoryId" | "skillSha">;
+type TaskSelection = Pick<
+  ControlTask,
+  "connectionId" | "targetKind" | "targetId" | "skillPath" | "model" | "effort"
+>;
+type NewTask = TaskOwner &
+  TaskSelection &
+  Pick<ControlTask, "id" | "repositoryId" | "skillSha"> & { status: "created" | "queued" };
 
 const readyConnection = and(
   isNotNull(githubConnections.webhookId),
@@ -27,7 +37,9 @@ export function matchesTaskSelection(task: ControlTask, selection: TaskSelection
     task.connectionId === selection.connectionId &&
     task.targetKind === selection.targetKind &&
     task.targetId === selection.targetId &&
-    task.skillPath === selection.skillPath
+    task.skillPath === selection.skillPath &&
+    (task.model ?? defaultTaskModel) === selection.model &&
+    (task.effort ?? defaultTaskEffort) === selection.effort
   );
 }
 
@@ -49,6 +61,11 @@ export async function listTasks(organizationId: number, page: number, pageSize: 
       targetTitle: controlTasks.targetTitle,
       targetUrl: controlTasks.targetUrl,
       skillPath: controlTasks.skillPath,
+      model: controlTasks.model,
+      effort: controlTasks.effort,
+      startedAt: controlTasks.startedAt,
+      finishedAt: controlTasks.finishedAt,
+      failure: controlTasks.failure,
     })
     .from(controlTasks)
     .where(scope)
