@@ -91,42 +91,6 @@ source of truth; `raw` stores the latest record JSON. Comments, reviews, jobs, l
 files are not imported. Webhooks update the mirror; use Sync now after downtime. Disconnect
 removes Control's webhook and clears its cached records. Replace token renews access.
 
-In **Activity**, select **Run task** to pair a synced issue or pull request with an agent
-skill from the connected repository's default branch. Choose a Codex model and effort before
-queuing the task. Activity tracks the run in the organization's history, even after disconnecting
-GitHub. Without a configured runner, **Create task** saves a **Created** entry.
-
-## Mac runner
-
-On the hosted Web service, set `CONTROL_RUNNER_ORGANIZATION_ID` to the numeric ID of the
-organization whose admins can run tasks. Find the ID in the organization's details in
-**Admin → Organizations**. Set `CONTROL_RUNNER_SECRET` to a random 64-character lowercase hex
-string. Use the same secret in a private configuration file on the Mac, outside the repository.
-
-```dotenv
-CONTROL_RUNNER_URL=https://your-control.example.com
-CONTROL_RUNNER_SECRET=<same-secret-as-web>
-CONTROL_RUNNER_CHECKOUT=/absolute/path/to/your/checkout
-```
-
-Install Node 24+, the Codex CLI, and this project's npm dependencies. Run `codex login` on the Mac
-with your ChatGPT account. From this project's checkout, start the runner with
-`npm run control:runner -- /absolute/path/to/control-runner.env`. Leave the terminal open while
-accepting tasks. Activity shows the last check-in and keeps queued tasks until the Mac returns.
-
-Open a task in Activity to follow Codex messages and tool status as they arrive. Control keeps
-the most recent output. **Open in Codex** opens the saved chat on the Mac that ran the task.
-
-For local Control with `make dev`, set `CONTROL_RUNNER_SECRET` and the local
-`CONTROL_RUNNER_ORGANIZATION_ID` in the project's `.env`. Set the Mac runner's URL to
-`http://localhost:5173` and restart the runner when switching. Only loopback URLs allow HTTP.
-
-The configured checkout's `origin` must be the connected GitHub repository, and its current
-commit must contain the saved skill version. Each task runs in a separate worktree under
-`~/.codex-control/worktrees/`. Use the Mac's existing tool sign-ins and Codex network settings
-for any commands the skill needs. If a run fails, inspect the failure in Activity and submit a new
-task when ready.
-
 [Render](../render.yaml) provisions a separate Control database and generates one encryption
 key shared by Web and Worker. Both services apply Control migrations before starting.
 

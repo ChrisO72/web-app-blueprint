@@ -54,15 +54,6 @@ const querySchema = z.object({
 
 export type RecordQuery = z.output<typeof querySchema>;
 
-const pageQuerySchema = querySchema.pick({ page: true, pageSize: true });
-
-export function parseControlPage(searchParams: URLSearchParams) {
-  return pageQuerySchema.parse({
-    page: searchParams.get("page"),
-    pageSize: searchParams.get("pageSize"),
-  });
-}
-
 export function parseRecordQuery(kind: RecordKind, searchParams: URLSearchParams): RecordQuery {
   const query = querySchema.parse({
     page: searchParams.get("page"),

@@ -35,7 +35,6 @@
     "db:generate:control": "drizzle-kit generate --config=control/drizzle.config.ts",
     "db:migrate:control": "node --import tsx control/db/migrate.ts",
     "db:studio:control": "drizzle-kit studio --config=control/drizzle.config.ts",
-    "control:runner": "node --import tsx control/runner/main.ts",
     "build:db:control": "node --import tsx control/db/build.ts"
   },
   "dependencies": {

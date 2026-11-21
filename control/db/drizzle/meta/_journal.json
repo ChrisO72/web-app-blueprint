@@ -8,27 +8,6 @@
       "when": 1794948648679,
       "tag": "0000_github_connection",
       "breakpoints": true
-    },
-    {
-      "idx": 1,
-      "version": "7",
-      "when": 1795205902404,
-      "tag": "0001_control_tasks",
-      "breakpoints": true
-    },
-    {
-      "idx": 2,
-      "version": "7",
-      "when": 1795266299115,
-      "tag": "0002_local_task_runner",
-      "breakpoints": true
-    },
-    {
-      "idx": 3,
-      "version": "7",
-      "when": 1795269741329,
-      "tag": "0003_codex_task_output",
-      "breakpoints": true
     }
   ]
 }

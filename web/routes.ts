@@ -11,7 +11,6 @@ export default [
   route("confirm-email", "routes/auth/confirm-email.tsx"),
 
   route("webhooks/github", "routes/webhooks/github.ts"),
-  route("control/runner", "routes/control/runner.ts"),
 
   // Protected routes
   layout("routes/layout.tsx", [
@@ -22,8 +21,6 @@ export default [
       route("control/metrics", "routes/control/metrics.ts"),
       route("control/telemetry", "routes/control/telemetry.ts"),
       route("control/activity", "routes/control/activity.tsx"),
-      route("control/activity/options", "routes/control/activity-options.ts"),
-      route("control/activity/output", "routes/control/activity-output.ts"),
       route("control/issues", "routes/control/issues.tsx"),
       route("control/prs", "routes/control/prs.tsx"),
       route("control/actions", "routes/control/actions.tsx"),

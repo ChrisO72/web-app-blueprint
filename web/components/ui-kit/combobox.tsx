@@ -8,7 +8,6 @@ export function Combobox<T>({
   options,
   displayValue,
   filter,
-  onQueryChange,
   anchor = 'bottom',
   className,
   placeholder,
@@ -20,7 +19,6 @@ export function Combobox<T>({
   options: T[]
   displayValue: (value: T | null) => string | undefined
   filter?: (value: T, query: string) => boolean
-  onQueryChange?: (query: string) => void
   className?: string
   placeholder?: string
   autoFocus?: boolean
@@ -28,17 +26,16 @@ export function Combobox<T>({
   children: (value: NonNullable<T>) => React.ReactElement
 } & Omit<Headless.ComboboxProps<T, false>, 'as' | 'multiple' | 'children'> & { anchor?: 'top' | 'bottom' }) {
   const [query, setQuery] = useState('')
-  const updateQuery = onQueryChange ?? setQuery
 
   const filteredOptions =
-    onQueryChange || query === ''
+    query === ''
       ? options
       : options.filter((option) =>
           filter ? filter(option, query) : displayValue(option)?.toLowerCase().includes(query.toLowerCase())
         )
 
   return (
-    <Headless.Combobox {...props} multiple={false} virtual={{ options: filteredOptions }} onClose={() => updateQuery('')}>
+    <Headless.Combobox {...props} multiple={false} virtual={{ options: filteredOptions }} onClose={() => setQuery('')}>
       <span
         data-slot="control"
         className={clsx([
@@ -62,7 +59,7 @@ export function Combobox<T>({
           data-slot="control"
           aria-label={ariaLabel}
           displayValue={(option: T) => displayValue(option) ?? ''}
-          onChange={(event) => updateQuery(event.target.value)}
+          onChange={(event) => setQuery(event.target.value)}
           placeholder={placeholder}
           className={clsx([
             className,

@@ -4,16 +4,10 @@ import type { User } from "~/db/repositories/users";
 import { env } from "~/web/env.server";
 import { authenticatedUserContext } from "~/web/lib/session.server";
 import { loader as overviewLoader } from "~/web/routes/control/index";
-import {
-  action as createTaskAction,
-  loader as activityLoader,
-} from "~/web/routes/control/activity";
-import { loader as activityOptionsLoader } from "~/web/routes/control/activity-options";
-import { loader as activityOutputLoader } from "~/web/routes/control/activity-output";
-import { action as runnerAction } from "~/web/routes/control/runner";
+import { loader as activityLoader } from "~/web/routes/control/activity";
 import { action as settingsAction, loader as settingsLoader } from "~/web/routes/control/settings";
 import { action as docsAction, loader as docsLoader } from "~/web/routes/control/docs";
-import { loadDocuments, loadRepositorySkills, proposeDocument } from "~/control/docs.server";
+import { loadDocuments, proposeDocument } from "~/control/docs.server";
 import { loader as issuesLoader } from "~/web/routes/control/issues";
 import { loader as prsLoader } from "~/web/routes/control/prs";
 import { loader as recordLoader } from "~/web/routes/control/record";
@@ -27,41 +21,10 @@ import {
   publicError,
 } from "~/control/github.server";
 import { getRecordDetails, listRecords } from "~/control/db/repositories/github.server";
-import { pollRunner } from "~/control/db/repositories/runner.server";
-import {
-  createTask,
-  findTaskSubmission,
-  getTaskProgress,
-  listTasks,
-  listTaskTargets,
-} from "~/control/db/repositories/tasks.server";
 import { CONNECTION_ID, TOKEN } from "~/integrations/github/test/fixtures";
 import type { Route } from "../routes/control/+types/index";
 
-vi.mock("~/control/docs.server", () => ({
-  loadDocuments: vi.fn(),
-  loadRepositorySkills: vi.fn(),
-  proposeDocument: vi.fn(),
-}));
-vi.mock("~/control/db/repositories/runner.server", () => ({
-  getRunnerPresence: vi.fn(async () => null),
-  pollRunner: vi.fn(async () => ({ job: null })),
-  finishRunnerTask: vi.fn(async () => false),
-}));
-vi.mock("~/control/db/repositories/tasks.server", async (importOriginal) => ({
-  ...(await importOriginal<typeof import("~/control/db/repositories/tasks.server")>()),
-  listTasks: vi.fn(async () => ({
-    tasks: [],
-    page: 1,
-    pageSize: 10,
-    totalPages: 0,
-    totalCount: 0,
-  })),
-  listTaskTargets: vi.fn(async () => null),
-  getTaskProgress: vi.fn(async () => null),
-  findTaskSubmission: vi.fn(async () => null),
-  createTask: vi.fn(async () => ({ outcome: "created" as const })),
-}));
+vi.mock("~/control/docs.server", () => ({ loadDocuments: vi.fn(), proposeDocument: vi.fn() }));
 vi.mock("~/control/github.server", () => ({
   settingsData: vi.fn(async () => ({
     setup: { ready: false, error: null },
@@ -89,12 +52,12 @@ vi.mock("~/control/db/repositories/github.server", () => ({
   })),
 }));
 
-function args(role: User["role"], path: string, organizationId = 1) {
+function args(role: User["role"], path: string) {
   const context = new RouterContextProvider();
   const now = new Date();
   context.set(authenticatedUserContext, {
     id: 1,
-    organizationId,
+    organizationId: 1,
     email: "user@example.com",
     firstName: "User",
     lastName: null,
@@ -117,7 +80,6 @@ function args(role: User["role"], path: string, organizationId = 1) {
 describe.each([
   { path: "/control", loader: overviewLoader },
   { path: "/control/activity", loader: activityLoader },
-  { path: "/control/activity/options", loader: activityOptionsLoader },
   { path: "/control/settings", loader: settingsLoader },
   { path: "/control/docs", loader: docsLoader },
   { path: "/control/issues", loader: issuesLoader },
@@ -162,180 +124,6 @@ it("provides schema-derived entity fields in the Control overview", () => {
   expect(pullFields.find(({ name }) => name === "headBranch")).toMatchObject({
     sqlType: "text",
     nullable: false,
-  });
-});
-
-describe("Control activity", () => {
-  const runnerSecret = env.CONTROL_RUNNER_SECRET;
-  const runnerOrganization = env.CONTROL_RUNNER_ORGANIZATION_ID;
-  const selection = {
-    id: "7e0547a5-3f88-41c0-ae4e-b6f70efca686",
-    connectionId: CONNECTION_ID,
-    targetKind: "issue",
-    targetId: "42",
-    skillPath: ".agents/skills/blueprint-build/SKILL.md",
-    model: "gpt-6.2-astra",
-    effort: "high",
-  };
-  const skillSha = "a".repeat(40);
-
-  beforeEach(() => {
-    vi.clearAllMocks();
-    env.CONTROL_RUNNER_SECRET = undefined;
-    env.CONTROL_RUNNER_ORGANIZATION_ID = undefined;
-    vi.mocked(loadRepositorySkills).mockResolvedValue({
-      connectionId: CONNECTION_ID,
-      repositoryId: 123,
-      skills: [{ name: "blueprint-build", path: selection.skillPath, sha: skillSha }],
-    });
-  });
-  afterEach(() => {
-    env.CONTROL_RUNNER_SECRET = runnerSecret;
-    env.CONTROL_RUNNER_ORGANIZATION_ID = runnerOrganization;
-  });
-
-  function submission(role: User["role"], origin = env.APP_URL) {
-    const base = args(role, "/control/activity");
-    return {
-      ...base,
-      request: new Request(base.url, {
-        method: "POST",
-        headers: { origin },
-        body: new URLSearchParams({ ...selection, organizationId: "9", skillSha: "untrusted" }),
-      }),
-    };
-  }
-
-  it("scopes history to the authenticated organization and uses Control pagination", async () => {
-    await activityLoader(args("admin", "/control/activity?page=3&pageSize=25&organizationId=9"));
-    expect(listTasks).toHaveBeenCalledExactlyOnceWith(1, 3, 25);
-  });
-
-  it("scopes Codex output to the authenticated admin's organization", async () => {
-    const path = `/control/activity/output?taskId=${selection.id}&organizationId=99`;
-    await expect(activityOutputLoader(args("viewer", path))).rejects.toMatchObject({ status: 302 });
-    expect(getTaskProgress).not.toHaveBeenCalled();
-    await activityOutputLoader(args("admin", path, 7));
-    expect(getTaskProgress).toHaveBeenCalledExactlyOnceWith(7, selection.id);
-  });
-
-  it("searches synced targets by the trimmed query", async () => {
-    await activityOptionsLoader(args("admin", "/control/activity/options?q=+%2342+"));
-    expect(listTaskTargets).toHaveBeenCalledExactlyOnceWith("#42");
-  });
-
-  it("blocks non-admins from loading skills or creating tasks", async () => {
-    await expect(
-      activityOptionsLoader(args("viewer", "/control/activity/options?kind=skills")),
-    ).rejects.toMatchObject({ status: 302 });
-    await expect(createTaskAction(submission("user"))).rejects.toMatchObject({ status: 302 });
-    expect(loadRepositorySkills).not.toHaveBeenCalled();
-    expect(findTaskSubmission).not.toHaveBeenCalled();
-    expect(createTask).not.toHaveBeenCalled();
-  });
-
-  it("guards task creation by method and origin", async () => {
-    await expect(createTaskAction(args("admin", "/control/activity"))).rejects.toMatchObject({
-      status: 405,
-    });
-    await expect(
-      createTaskAction(submission("admin", "https://other.example")),
-    ).rejects.toMatchObject({ status: 403 });
-    expect(findTaskSubmission).not.toHaveBeenCalled();
-  });
-
-  it("uses the authenticated owner and the server-resolved skill when creating a task", async () => {
-    expect(await createTaskAction(submission("admin"))).toEqual({ success: true });
-    expect(loadRepositorySkills).toHaveBeenCalledExactlyOnceWith(CONNECTION_ID);
-    expect(createTask).toHaveBeenCalledExactlyOnceWith({
-      ...selection,
-      targetId: 42,
-      organizationId: 1,
-      createdByUserId: 1,
-      repositoryId: 123,
-      skillSha,
-      status: "created",
-    });
-  });
-
-  it("queues the requested model and effort when the authenticated organization has a runner", async () => {
-    env.CONTROL_RUNNER_SECRET = "a".repeat(64);
-    env.CONTROL_RUNNER_ORGANIZATION_ID = 1;
-    expect(await createTaskAction(submission("admin"))).toEqual({ success: true });
-    expect(createTask).toHaveBeenCalledWith(
-      expect.objectContaining({
-        status: "queued",
-        model: selection.model,
-        effort: selection.effort,
-      }),
-    );
-  });
-
-  it("uses the runner secret's organization for claims and rejects unauthenticated check-ins", async () => {
-    env.CONTROL_RUNNER_SECRET = "a".repeat(64);
-    env.CONTROL_RUNNER_ORGANIZATION_ID = 7;
-    const base = args("viewer", "/control/runner");
-    const input = {
-      action: "poll",
-      instanceId: CONNECTION_ID,
-      repositoryName: "owner/repo",
-      readiness: "ready",
-    };
-    function request(secret: string) {
-      return {
-        ...base,
-        request: new Request(base.url, {
-          method: "POST",
-          headers: { authorization: "Bearer " + secret },
-          body: JSON.stringify({ ...input, organizationId: 99 }),
-        }),
-      };
-    }
-    expect((await runnerAction(request("b".repeat(64)))).status).toBe(401);
-    expect(pollRunner).not.toHaveBeenCalled();
-    expect((await runnerAction(request(env.CONTROL_RUNNER_SECRET))).status).toBe(200);
-    expect(pollRunner).toHaveBeenCalledExactlyOnceWith(7, input);
-  });
-
-  it("rejects a skill that disappeared after the picker loaded", async () => {
-    vi.mocked(loadRepositorySkills).mockResolvedValueOnce({
-      connectionId: CONNECTION_ID,
-      repositoryId: 123,
-      skills: [],
-    });
-    expect(await createTaskAction(submission("admin"))).toMatchObject({
-      fieldErrors: { skillPath: expect.any(Array) },
-    });
-    expect(createTask).not.toHaveBeenCalled();
-  });
-
-  it("returns success for a saved submission even after the repository disconnects", async () => {
-    vi.mocked(findTaskSubmission).mockResolvedValueOnce({
-      ...selection,
-      targetKind: "issue",
-      model: "gpt-6.2-astra",
-      effort: "high",
-      targetId: 42,
-      organizationId: 1,
-      createdByUserId: 1,
-      createdAt: new Date(),
-      status: "created",
-      repositoryId: 123,
-      repositoryName: "owner/repo",
-      targetNumber: 15,
-      targetTitle: "Example",
-      targetUrl: "https://github.com/owner/repo/issues/15",
-      skillSha,
-      startedAt: null,
-      finishedAt: null,
-      failure: null,
-      leaseId: null,
-      leaseExpiresAt: null,
-      codexProgress: null,
-    });
-    expect(await createTaskAction(submission("admin"))).toEqual({ success: true });
-    expect(loadRepositorySkills).not.toHaveBeenCalled();
-    expect(createTask).not.toHaveBeenCalled();
   });
 });
 

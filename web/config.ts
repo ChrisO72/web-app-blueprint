@@ -1,5 +1,4 @@
 import { z } from "zod";
-import { runnerSecretSchema } from "~/control/runner-protocol";
 import { nodeEnvironment } from "~/runtime/config";
 
 export const webEnvSchema = z.object({
@@ -11,8 +10,4 @@ export const webEnvSchema = z.object({
   RATE_LIMIT_KEY_SECRET: z.string().min(32),
   JWT_SECRET: z.string().min(32),
   REFRESH_SECRET: z.string().min(32),
-  CONTROL_RUNNER_SECRET: runnerSecretSchema.or(z.literal("")).optional(),
-  CONTROL_RUNNER_ORGANIZATION_ID: z
-    .union([z.literal(""), z.coerce.number().int().positive()])
-    .optional(),
 });
